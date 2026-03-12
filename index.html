@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +9,8 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     /* ══ VARIABLES ══ */
@@ -912,10 +915,168 @@ function saveEntrada(){
 
 function printLabels(){ const rows=getSel(); if(!rows)return; const toPrint=rows.filter(r=>r.imprimir!=='NO'); if(!toPrint.length)return toast('Sin items para imprimir','error'); generatePDFInternal(toPrint,false,'btnPrint'); }
 
-function generatePDFInternal(data,shouldReset,btnId){
+// ── PDF LOCAL (jsPDF + QRCode) ────────────────────────────────────────────────
+function generateQRDataURL(text){
+  return new Promise(resolve=>{
+    const div=document.createElement('div');
+    div.style.cssText='position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(div);
+    try{
+      new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+      setTimeout(()=>{
+        const img=div.querySelector('img')||div.querySelector('canvas');
+        if(img&&img.tagName==='CANVAS'){resolve(img.toDataURL('image/png'));}
+        else if(img&&img.tagName==='IMG'){resolve(img.src);}
+        else resolve(null);
+        document.body.removeChild(div);
+      },100);
+    }catch(e){document.body.removeChild(div);resolve(null);}
+  });
+}
+
+async function generatePDFInternal(data,shouldReset,btnId){
   loadBtn(btnId,true);
-  const poInfo={poNumber:data[0].po||curPO,buyer:data[0].buyer||curBuyer,supplier:data[0].supplier||curSupplier};
-  api('generateLabelsPDF',{printData:data,poInfo}).then(res=>{ loadBtn(btnId,false); if(res.success){ const box=document.getElementById('pdfLinksContainer'); box.innerHTML=''; Object.keys(res.pdfFiles).forEach(k=>{ if(k.includes('ERROR')) box.innerHTML+=`<div class="alert alert-danger p-2">${k}: ${res.pdfFiles[k]}</div>`; else box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start" onclick="openBase64PDF('${res.pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`; }); document.getElementById('modalPdf').classList.add('show'); if(shouldReset)resetEntradas(); }else toast(res.error,'error'); }).catch(e=>{ loadBtn(btnId,false); toast(e.message,'error'); });
+  try{
+    const {jsPDF}=window.jspdf;
+    const LOGO_URL='http://drive.google.com/thumbnail?sz=w200&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH';
+
+    // Agrupar por tipo
+    const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
+    data.forEach(r=>{ const t=r.imprimir||'SENCILLA'; if(grupos[t])for(let i=0;i<(r.copies||1);i++)grupos[t].push(r); });
+
+    // Cargar logo una vez
+    let logoDataURL=null;
+    try{
+      const r=await fetch(LOGO_URL); const ab=await r.arrayBuffer();
+      const b64=btoa(String.fromCharCode(...new Uint8Array(ab)));
+      logoDataURL='data:image/png;base64,'+b64;
+    }catch(e){}
+
+    const pdfFiles={};
+
+    for(const tipo of ['SENCILLA','DOBLE','TRIPLE']){
+      const items=grupos[tipo]; if(!items.length) continue;
+      let doc;
+
+      if(tipo==='SENCILLA'){
+        // Página completa carta, 1 etiqueta por página
+        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+        for(let idx=0;idx<items.length;idx++){
+          if(idx>0) doc.addPage();
+          const it=items[idx];
+          const qr=await generateQRDataURL(it.code||it.description||'');
+          drawSencilla(doc,it,qr,logoDataURL);
+        }
+      } else if(tipo==='DOBLE'){
+        // Página carta, 2 etiquetas por página (una arriba, una abajo)
+        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+        for(let idx=0;idx<items.length;idx+=2){
+          if(idx>0) doc.addPage();
+          const qr1=await generateQRDataURL(items[idx].code||items[idx].description||'');
+          drawDoble(doc,items[idx],qr1,logoDataURL,0);
+          if(items[idx+1]){
+            const qr2=await generateQRDataURL(items[idx+1].code||items[idx+1].description||'');
+            drawDoble(doc,items[idx+1],qr2,logoDataURL,1);
+          }
+        }
+      } else {
+        // TRIPLE: 3 etiquetas por página
+        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+        for(let idx=0;idx<items.length;idx+=3){
+          if(idx>0) doc.addPage();
+          for(let s=0;s<3;s++){
+            if(items[idx+s]){
+              const qr=await generateQRDataURL(items[idx+s].code||items[idx+s].description||'');
+              drawTriple(doc,items[idx+s],qr,logoDataURL,s);
+            }
+          }
+        }
+      }
+      pdfFiles[tipo]=doc.output('datauristring').split(',')[1];
+    }
+
+    loadBtn(btnId,false);
+    const box=document.getElementById('pdfLinksContainer'); box.innerHTML='';
+    Object.keys(pdfFiles).forEach(k=>{
+      box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
+    });
+    document.getElementById('modalPdf').classList.add('show');
+    if(shouldReset) resetEntradas();
+  }catch(err){
+    loadBtn(btnId,false);
+    toast('Error generando PDF: '+err.message,'error');
+    console.error(err);
+  }
+}
+
+function drawLabelBase(doc,it,qrDataURL,logoDataURL,x,y,w,h){
+  // Borde
+  doc.setDrawColor(0); doc.setLineWidth(0.3);
+  doc.rect(x,y,w,h);
+
+  // Logo + "FLEX AMERICAS"
+  const logoW=14,logoH=14;
+  if(logoDataURL){ try{doc.addImage(logoDataURL,'PNG',x+w/2-logoW/2-20,y+4,logoW,logoH);}catch(e){} }
+  doc.setFont('helvetica','bold'); doc.setFontSize(h>60?16:h>40?11:9);
+  doc.text('FLEX AMERICAS',x+w/2+(h>60?7:4),y+(h>60?13:9),{align:'center'});
+
+  // Info lines
+  const fs=h>60?9:h>40?7:6.5;
+  const lh=h>60?6:4.5;
+  let cy=y+(h>60?22:16);
+
+  const po=it.po||curPO||'';
+  const gin=it.gin||'';
+  const fecha=it.fechaFactura||it.date||new Date().toLocaleDateString('es-MX');
+  const usuario=it.elaboradoPor||it.user||currentUser?.name||'';
+  const location=it.ubicacion||it.location||'';
+  const codigo=it.code||'';
+  const desc=it.description||'';
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(fs);
+  doc.text(`PO:${po}       GIN:${gin}`,x+w/2,cy,{align:'center'}); cy+=lh;
+  doc.text(`RECEIVED ON:${fecha}`,x+w/2,cy,{align:'center'}); cy+=lh;
+  doc.text(`USER:${usuario}`,x+w/2,cy,{align:'center'}); cy+=lh;
+
+  // LOCATION subrayado + bold
+  doc.setFont('helvetica','bold');
+  const locTxt=`LOCATION :${location}`;
+  doc.text(locTxt,x+w/2,cy,{align:'center'});
+  const tw=doc.getTextWidth(locTxt);
+  doc.line(x+w/2-tw/2,cy+0.6,x+w/2+tw/2,cy+0.6);
+  cy+=lh;
+
+  // {CÓDIGO} bold grande
+  doc.setFont('helvetica','bold'); doc.setFontSize(h>60?12:h>40?9:8);
+  doc.text(`{${codigo}}`,x+w/2,cy,{align:'center'}); cy+=lh+1;
+
+  // QR
+  const qrS=h>60?28:h>40?22:18;
+  if(qrDataURL){ try{doc.addImage(qrDataURL,'PNG',x+w/2-qrS/2,cy,qrS,qrS);}catch(e){} }
+  cy+=qrS+2;
+
+  // Descripción
+  doc.setFont('helvetica','normal'); doc.setFontSize(fs);
+  const maxW=w-8;
+  const lines=doc.splitTextToSize(desc,maxW);
+  doc.text(lines.slice(0,h>60?3:2),x+w/2,cy,{align:'center'});
+}
+
+function drawSencilla(doc,it,qr,logo){
+  // Carta: 215.9 x 279.4 mm, margen 10
+  drawLabelBase(doc,it,qr,logo,10,10,195.9,259.4);
+}
+function drawDoble(doc,it,qr,logo,slot){
+  const pw=215.9,ph=279.4,mx=10,my=8,gap=4;
+  const lh=(ph-my*2-gap)/2;
+  const ly=my+slot*(lh+gap);
+  drawLabelBase(doc,it,qr,logo,mx,ly,pw-mx*2,lh);
+}
+function drawTriple(doc,it,qr,logo,slot){
+  const pw=215.9,ph=279.4,mx=10,my=6,gap=3;
+  const lh=(ph-my*2-gap*2)/3;
+  const ly=my+slot*(lh+gap);
+  drawLabelBase(doc,it,qr,logo,mx,ly,pw-mx*2,lh);
 }
 
 function openBase64PDF(b64){ const bytes=atob(b64),arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})),'_blank'); }
