@@ -915,23 +915,131 @@ function saveEntrada(){
 
 function printLabels(){ const rows=getSel(); if(!rows)return; const toPrint=rows.filter(r=>r.imprimir!=='NO'); if(!toPrint.length)return toast('Sin items para imprimir','error'); generatePDFInternal(toPrint,false,'btnPrint'); }
 
-// ── PDF LOCAL (jsPDF + QRCode) ────────────────────────────────────────────────
+// ── PDF LOCAL — jsPDF + QRCode ────────────────────────────────────────────────
+const GAS_STOCK_BASE = GAS_URL + '?stock=';
+
 function generateQRDataURL(text){
   return new Promise(resolve=>{
     const div=document.createElement('div');
-    div.style.cssText='position:fixed;left:-9999px;top:-9999px';
+    div.style.cssText='position:fixed;left:-9999px;top:-9999px;width:200px;height:200px';
     document.body.appendChild(div);
     try{
       new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
       setTimeout(()=>{
-        const img=div.querySelector('img')||div.querySelector('canvas');
-        if(img&&img.tagName==='CANVAS'){resolve(img.toDataURL('image/png'));}
-        else if(img&&img.tagName==='IMG'){resolve(img.src);}
-        else resolve(null);
+        const img=div.querySelector('canvas');
+        resolve(img?img.toDataURL('image/png'):null);
         document.body.removeChild(div);
-      },100);
+      },120);
     }catch(e){document.body.removeChild(div);resolve(null);}
   });
+}
+
+// Fit font size so text fits within maxW — returns size used
+function fitFs(ctx,text,maxW,maxSize,bold){
+  let fs=maxSize;
+  while(fs>=5){
+    ctx.font=`${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
+    if(ctx.measureText(text).width<=maxW) return fs;
+    fs-=0.5;
+  }
+  return 5;
+}
+
+// Draw one label inside rect (x,y,w,h) — all sizes derived from h
+function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg){
+  ctx.save();
+  ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='#000'; ctx.lineWidth=1;
+  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+
+  const pad=w*0.035;
+  const iw=w-pad*2;   // inner width available for text
+  const cx=x+w/2;
+
+  // Zone heights as fraction of h
+  const zh={hdr:0.16,div:0.015,po:0.09,rcv:0.09,usr:0.09,loc:0.09,cod:0.11,qr:0.26,dsc:0.145};
+  let zy=y;
+  const zs={};
+  for(const k of ['hdr','div','po','rcv','usr','loc','cod','qr','dsc']){
+    zs[k]=zy; zy+=zh[k]*h;
+  }
+
+  // ── HEADER: logo + FLEX AMERICAS ──────────────────────────
+  const hh=zh.hdr*h;
+  const titleStr='FLEX AMERICAS';
+  const titleFs=fitFs(ctx,titleStr,iw*0.68,hh*0.68,true);
+  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
+  const titleW=ctx.measureText(titleStr).width;
+  const logoSz=Math.min(hh*0.80,titleFs*1.05);
+  const gap=logoSz*0.28;
+  const blockW=logoSz+gap+titleW;
+  const hMidY=zs.hdr+hh/2;
+
+  if(logoImg){
+    ctx.drawImage(logoImg,cx-blockW/2,hMidY-logoSz/2,logoSz,logoSz);
+  }
+  ctx.fillStyle='#000'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
+  ctx.fillText(titleStr,cx-blockW/2+(logoImg?logoSz+gap:0),hMidY);
+
+  // ── DIVIDER ───────────────────────────────────────────────
+  const divY=zs.div+zh.div*h*0.5;
+  ctx.beginPath(); ctx.moveTo(x+4,divY); ctx.lineTo(x+w-4,divY);
+  ctx.lineWidth=0.5; ctx.strokeStyle='#000'; ctx.stroke();
+
+  // ── Row helper: fit & draw centered text in a zone ────────
+  function row(text,zone,bold2,underline){
+    const rh=zh[zone]*h;
+    const fs=fitFs(ctx,text,iw,rh*0.70,bold2);
+    ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
+    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const ry=zs[zone]+rh/2;
+    ctx.fillText(text,cx,ry);
+    if(underline){
+      const tw=ctx.measureText(text).width;
+      ctx.beginPath(); ctx.moveTo(cx-tw/2,ry+fs*0.55); ctx.lineTo(cx+tw/2,ry+fs*0.55);
+      ctx.lineWidth=0.6; ctx.stroke();
+    }
+  }
+
+  // ── Info rows ─────────────────────────────────────────────
+  const po=item.po||curPO||'';
+  const gin=item.gin||'';
+  const fecha=item.fechaFactura||item.date||new Date().toLocaleDateString('es-MX');
+  const usuario=item.elaboradoPor||item.user||currentUser?.name||'';
+  const location=item.ubicacion||item.location||'';
+  const codigo=item.code||'';
+  const desc=item.description||'';
+
+  row(`PO:${po}       GIN:${gin}`,'po',false,false);
+  row(`RECEIVED ON: ${fecha}`,'rcv',false,false);
+  row(`USER: ${usuario}`,'usr',false,false);
+  row(`LOCATION: ${location}`,'loc',true,true);
+  row(codigo,'cod',true,false);   // sin llaves {}
+
+  // ── QR ────────────────────────────────────────────────────
+  const qh=zh.qr*h;
+  const qrSz=Math.min(qh*0.88,iw*0.55);
+  if(qrImg) ctx.drawImage(qrImg,cx-qrSz/2,zs.qr+(qh-qrSz)/2,qrSz,qrSz);
+
+  // ── Descripción con wrap ──────────────────────────────────
+  const dh=zh.dsc*h;
+  const dMaxFs=dh*0.36;
+  let dfs=fitFs(ctx,desc,iw,dMaxFs,false);
+  ctx.font=`${dfs}px Helvetica,Arial,sans-serif`;
+  const words=desc.split(' '); let line=''; const dlines=[];
+  for(const wd of words){
+    const t=line?line+' '+wd:wd;
+    if(ctx.measureText(t).width>iw&&line){dlines.push(line);line=wd;}else line=t;
+  }
+  if(line)dlines.push(line);
+  const dlh=dfs*1.32;
+  const totalDH=dlines.length*dlh;
+  let dy=zs.dsc+(dh-totalDH)/2+dfs*0.6;
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
+  dlines.slice(0,3).forEach(l=>{ctx.fillText(l,cx,dy);dy+=dlh;});
+
+  ctx.restore();
 }
 
 async function generatePDFInternal(data,shouldReset,btnId){
@@ -940,65 +1048,76 @@ async function generatePDFInternal(data,shouldReset,btnId){
     const {jsPDF}=window.jspdf;
     const LOGO_URL='http://drive.google.com/thumbnail?sz=w200&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH';
 
-    // Agrupar por tipo
+    // Agrupar por tipo de etiqueta
     const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
-    data.forEach(r=>{ const t=r.imprimir||'SENCILLA'; if(grupos[t])for(let i=0;i<(r.copies||1);i++)grupos[t].push(r); });
+    data.forEach(r=>{
+      const t=(r.imprimir||'SENCILLA').toUpperCase();
+      if(grupos[t]) for(let i=0;i<Math.max(1,parseInt(r.copies||1));i++) grupos[t].push({...r});
+    });
 
-    // Cargar logo una vez
-    let logoDataURL=null;
+    // Cargar logo
+    let logoImg=null;
     try{
-      const r=await fetch(LOGO_URL); const ab=await r.arrayBuffer();
-      const b64=btoa(String.fromCharCode(...new Uint8Array(ab)));
-      logoDataURL='data:image/png;base64,'+b64;
+      const li=new Image(); li.crossOrigin='anonymous'; li.src=LOGO_URL;
+      await new Promise((res,rej)=>{li.onload=()=>{logoImg=li;res();};li.onerror=rej;});
     }catch(e){}
 
     const pdfFiles={};
+    const MG=8; // margen mm
 
     for(const tipo of ['SENCILLA','DOBLE','TRIPLE']){
       const items=grupos[tipo]; if(!items.length) continue;
-      let doc;
 
+      let doc, format, orientation;
       if(tipo==='SENCILLA'){
-        // Página completa carta, 1 etiqueta por página
-        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
-        for(let idx=0;idx<items.length;idx++){
-          if(idx>0) doc.addPage();
-          const it=items[idx];
-          const qr=await generateQRDataURL(it.code||it.description||'');
-          drawSencilla(doc,it,qr,logoDataURL);
-        }
-      } else if(tipo==='DOBLE'){
-        // Página carta, 2 etiquetas por página (una arriba, una abajo)
-        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
-        for(let idx=0;idx<items.length;idx+=2){
-          if(idx>0) doc.addPage();
-          const qr1=await generateQRDataURL(items[idx].code||items[idx].description||'');
-          drawDoble(doc,items[idx],qr1,logoDataURL,0);
-          if(items[idx+1]){
-            const qr2=await generateQRDataURL(items[idx+1].code||items[idx+1].description||'');
-            drawDoble(doc,items[idx+1],qr2,logoDataURL,1);
-          }
-        }
+        // Landscape: ancho=279mm alto=216mm
+        doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
+        format=[279,216]; orientation='landscape';
       } else {
-        // TRIPLE: 3 etiquetas por página
+        // Portrait: ancho=216mm alto=279mm
         doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
-        for(let idx=0;idx<items.length;idx+=3){
-          if(idx>0) doc.addPage();
-          for(let s=0;s<3;s++){
-            if(items[idx+s]){
-              const qr=await generateQRDataURL(items[idx+s].code||items[idx+s].description||'');
-              drawTriple(doc,items[idx+s],qr,logoDataURL,s);
-            }
-          }
-        }
+        format=[216,279]; orientation='portrait';
       }
+
+      const [PW,PH]=format;
+      const DPI=3.78; // mm→px @ 96dpi (1mm=3.78px)
+
+      // Para cada página necesitamos un canvas temporal
+      const slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?2:3;
+      const gapMM=tipo==='TRIPLE'?3:4;
+      const labelH=(PH-MG*2-(slotsPerPage-1)*gapMM)/slotsPerPage;
+      const labelW=PW-MG*2;
+
+      for(let idx=0;idx<items.length;idx+=slotsPerPage){
+        if(idx>0) doc.addPage();
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+
+        for(let s=0;s<slotsPerPage;s++){
+          const it=items[idx+s]; if(!it) break;
+          const qrURL=GAS_STOCK_BASE+encodeURIComponent(it.code||it.description||'');
+          const qrDataURL=await generateQRDataURL(qrURL);
+          const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
+
+          const lx=MG*DPI;
+          const ly=(MG+(s*(labelH+gapMM)))*DPI;
+          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,qrImg,logoImg);
+        }
+
+        // Canvas → PDF page
+        const imgData=cv.toDataURL('image/jpeg',0.92);
+        doc.addImage(imgData,'JPEG',0,0,PW,PH);
+      }
+
       pdfFiles[tipo]=doc.output('datauristring').split(',')[1];
     }
 
     loadBtn(btnId,false);
     const box=document.getElementById('pdfLinksContainer'); box.innerHTML='';
     Object.keys(pdfFiles).forEach(k=>{
-      box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
+      box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start w-100 mb-2" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
     });
     document.getElementById('modalPdf').classList.add('show');
     if(shouldReset) resetEntradas();
@@ -1007,76 +1126,6 @@ async function generatePDFInternal(data,shouldReset,btnId){
     toast('Error generando PDF: '+err.message,'error');
     console.error(err);
   }
-}
-
-function drawLabelBase(doc,it,qrDataURL,logoDataURL,x,y,w,h){
-  // Borde
-  doc.setDrawColor(0); doc.setLineWidth(0.3);
-  doc.rect(x,y,w,h);
-
-  // Logo + "FLEX AMERICAS"
-  const logoW=14,logoH=14;
-  if(logoDataURL){ try{doc.addImage(logoDataURL,'PNG',x+w/2-logoW/2-20,y+4,logoW,logoH);}catch(e){} }
-  doc.setFont('helvetica','bold'); doc.setFontSize(h>60?16:h>40?11:9);
-  doc.text('FLEX AMERICAS',x+w/2+(h>60?7:4),y+(h>60?13:9),{align:'center'});
-
-  // Info lines
-  const fs=h>60?9:h>40?7:6.5;
-  const lh=h>60?6:4.5;
-  let cy=y+(h>60?22:16);
-
-  const po=it.po||curPO||'';
-  const gin=it.gin||'';
-  const fecha=it.fechaFactura||it.date||new Date().toLocaleDateString('es-MX');
-  const usuario=it.elaboradoPor||it.user||currentUser?.name||'';
-  const location=it.ubicacion||it.location||'';
-  const codigo=it.code||'';
-  const desc=it.description||'';
-
-  doc.setFont('helvetica','normal'); doc.setFontSize(fs);
-  doc.text(`PO:${po}       GIN:${gin}`,x+w/2,cy,{align:'center'}); cy+=lh;
-  doc.text(`RECEIVED ON:${fecha}`,x+w/2,cy,{align:'center'}); cy+=lh;
-  doc.text(`USER:${usuario}`,x+w/2,cy,{align:'center'}); cy+=lh;
-
-  // LOCATION subrayado + bold
-  doc.setFont('helvetica','bold');
-  const locTxt=`LOCATION :${location}`;
-  doc.text(locTxt,x+w/2,cy,{align:'center'});
-  const tw=doc.getTextWidth(locTxt);
-  doc.line(x+w/2-tw/2,cy+0.6,x+w/2+tw/2,cy+0.6);
-  cy+=lh;
-
-  // {CÓDIGO} bold grande
-  doc.setFont('helvetica','bold'); doc.setFontSize(h>60?12:h>40?9:8);
-  doc.text(`{${codigo}}`,x+w/2,cy,{align:'center'}); cy+=lh+1;
-
-  // QR
-  const qrS=h>60?28:h>40?22:18;
-  if(qrDataURL){ try{doc.addImage(qrDataURL,'PNG',x+w/2-qrS/2,cy,qrS,qrS);}catch(e){} }
-  cy+=qrS+2;
-
-  // Descripción
-  doc.setFont('helvetica','normal'); doc.setFontSize(fs);
-  const maxW=w-8;
-  const lines=doc.splitTextToSize(desc,maxW);
-  doc.text(lines.slice(0,h>60?3:2),x+w/2,cy,{align:'center'});
-}
-
-function drawSencilla(doc,it,qr,logo){
-  // Carta: 215.9 x 279.4 mm, margen 10
-  drawLabelBase(doc,it,qr,logo,10,10,195.9,259.4);
-}
-function drawDoble(doc,it,qr,logo,slot){
-  const pw=215.9,ph=279.4,mx=10,my=8,gap=4;
-  const lh=(ph-my*2-gap)/2;
-  const ly=my+slot*(lh+gap);
-  drawLabelBase(doc,it,qr,logo,mx,ly,pw-mx*2,lh);
-}
-function drawTriple(doc,it,qr,logo,slot){
-  const pw=215.9,ph=279.4,mx=10,my=6,gap=3;
-  const lh=(ph-my*2-gap*2)/3;
-  const ly=my+slot*(lh+gap);
-  drawLabelBase(doc,it,qr,logo,mx,ly,pw-mx*2,lh);
 }
 
 function openBase64PDF(b64){ const bytes=atob(b64),arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})),'_blank'); }
