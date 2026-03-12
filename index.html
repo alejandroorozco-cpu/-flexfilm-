@@ -761,7 +761,7 @@ function handleLogin(isAuto=false){
         localStorage.removeItem('flexErp_email');
         btn.disabled=false; sp.classList.add('d-none');
         const m=document.getElementById('loginMsg'); m.className='alert alert-danger py-2 mb-3';
-        m.textContent=isAuto?'Sesión expirada. Vuelve a iniciar sesión.':'Correo no autorizado. Usa tu cuenta @flexfilm.com.';
+        m.textContent=isAuto?'Sesión expirada. Vuelve a iniciar sesión.':(user?.message||'Correo no autorizado.');
       }
     }).catch(e=>{ btn.disabled=false; sp.classList.add('d-none'); const m=document.getElementById('loginMsg'); m.className='alert alert-danger py-2 mb-3'; m.textContent='Error de conexión. Intenta de nuevo.'; });
 }
