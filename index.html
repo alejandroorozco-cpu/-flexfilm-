@@ -211,11 +211,13 @@
 </head>
 <body>
 
+<!-- ── Hidden inputs ── -->
 <input type="file" id="cameraInput"     accept="image/*" capture="environment" style="display:none">
 <input type="file" id="cameraInputEdit" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="facturaFiles"    accept="image/*,.pdf" multiple style="display:none">
 <input type="file" id="materialFiles"   accept="image/*" multiple style="display:none">
 
+<!-- ══════════════════ LOGIN ══════════════════ -->
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">
@@ -233,14 +235,17 @@
       <i class="fas fa-sign-in-alt me-2"></i>Ingresar
     </button>
     <hr class="divider mt-3">
-    <div class="text-center"><small class="text-muted">Solo módulos de Inventario requieren autenticación</small></div>
+    <div class="text-center"><small class="text-muted">Acceso exclusivo para personal FlexFilm</small></div>
   </div>
 </div>
 
+<!-- ══════════════════ SHELL ══════════════════ -->
 <div id="shell" style="display:none;">
 
+  <!-- Overlay mobile -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
+  <!-- ── SIDEBAR ── -->
   <nav id="sidebar">
     <div class="sidebar-logo">
       <img src="http://drive.google.com/thumbnail?sz=w1000&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH" alt="Logo">
@@ -273,32 +278,23 @@
       <div class="nav-icon"><i class="fas fa-clock"></i></div>Pendientes GIN
     </button>
 
-    <div class="sidebar-footer">Alejandro Systems © 2026<br><small id="sidebarUser" style="color:#64748b;"></small></div>
+    <div class="sidebar-footer">Alejandro Systems © 2025<br><small id="sidebarUser" style="color:#64748b;"></small></div>
   </nav>
 
+  <!-- ── MAIN ── -->
   <div id="main">
+    <!-- Topbar -->
     <div class="topbar">
       <button id="btnMenuMobile" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
       <div class="topbar-title" id="topbarTitle">Registro de Entradas</div>
-      <div id="poSearchBar" class="d-flex" style="max-width:300px;flex:1;">
-        <div class="input-group">
-          <input type="text" id="poInput" class="form-control uppercase-input" placeholder="Número de PO…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter')searchPO()">
-          <button class="btn btn-primary" id="btnSearchPO" onclick="searchPO()" style="border-radius:0 10px 10px 0;">
-            <i class="fas fa-search"></i>
-          </button>
-        </div>
-      </div>
-      <div id="invSearchBar" style="display:none;max-width:300px;flex:1;">
-        <div class="input-group">
-          <input type="text" id="invSearchInput" class="form-control" placeholder="Código, ubicación…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter')searchInventory()">
-          <button class="btn btn-dark" onclick="searchInventory()" style="border-radius:0 10px 10px 0;"><i class="fas fa-search"></i></button>
-        </div>
-      </div>
+      <div id="topbarSearch" style="max-width:320px;flex:1;display:none;"></div>
       <div class="topbar-user" id="topbarUser"></div>
     </div>
 
+    <!-- Content -->
     <div id="content">
 
+      <!-- ══ VIEW: REGISTRO DE ENTRADAS ══ -->
       <div id="view-registro" class="view active">
         <div class="card-box">
           <div class="section-title"><i class="fas fa-file-alt me-1"></i>Datos Generales</div>
@@ -334,6 +330,7 @@
         </div>
       </div>
 
+      <!-- ══ VIEW: CONSULTA ══ -->
       <div id="view-consulta" class="view">
         <div class="card-box">
           <div class="section-title"><i class="fas fa-filter me-1"></i>Búsqueda</div>
@@ -385,6 +382,7 @@
         </div>
       </div>
 
+      <!-- ══ VIEW: INVENTARIO ══ -->
       <div id="view-inventario" class="view">
         <div class="row g-2 mb-3">
           <div class="col-6 col-md-3 d-grid"><button class="btn btn-outline-dark fw-bold" onclick="startScanner('search')"><i class="bi bi-qr-code-scan me-1"></i>Escanear</button></div>
@@ -421,6 +419,7 @@
         </div>
       </div>
 
+      <!-- ══ VIEW: REORDEN ══ -->
       <div id="view-reorden" class="view">
         <div class="card-box text-center py-4">
           <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
@@ -431,13 +430,10 @@
         <div id="reorderContent"></div>
       </div>
 
+      <!-- ══ VIEW: PENDIENTES GIN ══ -->
       <div id="view-gin" class="view">
-        <div id="ginLoginRequired" class="card-box text-center py-4" style="display:none;">
-          <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-          <h5>Autenticación requerida</h5>
-          <p class="text-muted">Ingresa con tu correo @flexfilm.com para registrar pendientes GIN.</p>
-          <button class="btn-main btn-gin mx-auto" style="max-width:240px;" onclick="focusLogin()"><i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión</button>
-        </div>
+        <!-- Login GIN if not authenticated -->
+
         <div id="ginContent">
           <div class="card-box">
             <div class="step-progress">
@@ -447,6 +443,7 @@
               <div class="step" id="gstep4"><div class="step-icon">4</div><div class="step-label">Confirmar</div></div>
             </div>
 
+            <!-- Step 1: PO -->
             <div class="gin-section active" id="gsec1">
               <div class="row g-2 mb-3">
                 <div class="col-md-8"><label class="form-label">Número de PO</label><input type="text" id="ginPoInput" class="form-control" placeholder="En caso de no tener PO, colocar 0"></div>
@@ -465,6 +462,7 @@
               </div>
             </div>
 
+            <!-- Step 2: Details -->
             <div class="gin-section" id="gsec2">
               <div class="row g-2 mb-3">
                 <div class="col-md-6"><label class="form-label">Proveedor</label><input type="text" id="ginVendor" class="form-control"></div>
@@ -483,6 +481,7 @@
               </div>
             </div>
 
+            <!-- Step 3: Documents -->
             <div class="gin-section" id="gsec3">
               <div class="row g-3 mb-3">
                 <div class="col-md-6">
@@ -507,6 +506,7 @@
               </div>
             </div>
 
+            <!-- Step 4: Confirm -->
             <div class="gin-section" id="gsec4">
               <div class="card-box" style="border:2px solid var(--gin-color);">
                 <div class="section-title" style="color:var(--gin-color);">Resumen del registro</div>
@@ -531,7 +531,12 @@
         </div>
       </div>
 
-    </div></div></div><div class="offcanvas offcanvas-end" tabindex="-1" id="sidebarChanges">
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ── Offcanvas: Inventory changes ── -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="sidebarChanges">
   <div class="offcanvas-header bg-primary text-white">
     <h5 class="offcanvas-title"><i class="fas fa-list-check me-1"></i>Cambios Pendientes</h5>
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
@@ -546,6 +551,7 @@
   </div>
 </div>
 
+<!-- ── Scanner modal ── -->
 <div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-dark text-white">
@@ -559,6 +565,7 @@
   </div>
 </div>
 
+<!-- ── Transfer modal ── -->
 <div class="modal fade" id="transferModal" tabindex="-1">
   <div class="modal-dialog"><div class="modal-content">
     <div class="modal-header bg-warning"><h5 class="modal-title">Transferir Material</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -572,6 +579,7 @@
   </div></div>
 </div>
 
+<!-- ── Manual finding modal ── -->
 <div class="modal fade" id="manualFindingModal" tabindex="-1">
   <div class="modal-dialog"><div class="modal-content">
     <div class="modal-header bg-info text-white"><h5 class="modal-title">Registrar Hallazgo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -588,6 +596,7 @@
   </div></div>
 </div>
 
+<!-- ── Edit modal (Entradas) ── -->
 <div id="modalEdicion" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-head head-edit">
@@ -625,6 +634,7 @@
   </div>
 </div>
 
+<!-- ── Delete modal ── -->
 <div id="modalConfirmDelete" class="modal-overlay">
   <div class="modal-card" style="max-width:400px;">
     <div class="modal-head head-delete">
@@ -647,6 +657,7 @@
   </div>
 </div>
 
+<!-- ── PDF modal ── -->
 <div id="modalPdf" class="modal-overlay">
   <div class="modal-card" style="max-width:440px;">
     <div class="modal-head" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;">
@@ -658,6 +669,7 @@
   </div>
 </div>
 
+<!-- ── GIN success modal ── -->
 <div id="ginSuccessModal" class="modal-overlay">
   <div class="modal-card" style="max-width:400px;">
     <div class="modal-head" style="background:linear-gradient(135deg,#0f9d58,#34a853);color:#fff;">
@@ -676,6 +688,7 @@
   </div>
 </div>
 
+<!-- ── Toast ── -->
 <div class="toast-wrap" id="toastWrap">
   <div class="toast-inner" id="toastInner">
     <i id="toastIcon" class="fas fa-check-circle fa-lg"></i>
@@ -690,26 +703,6 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 // ── GLOBALS ──────────────────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyO3ZSmXw7nqq7GeWmTMlCbqAmOGU57wyGeZfI5VG8mzg1rWpG1c_eNBfcH11TXo8WJIQ/exec";
-
-async function api(action, payload = {}) {
-  payload.action = action;
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
-      body: JSON.stringify(payload)
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error en API:", error);
-    throw new Error("Fallo de conexión con el servidor");
-  }
-}
-
 let currentUser    = null;
 let currentView    = 'registro';
 
@@ -741,7 +734,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   const saved = localStorage.getItem('flexErp_email');
   if (saved) { document.getElementById('loginEmail').value=saved; handleLogin(true); }
-  else { tryShowAppWithoutAuth(); }
+  // No saved email → stay on login screen (mandatory auth)
 
   // Close overlay modals
   ['modalEdicion','modalConfirmDelete','modalPdf','ginSuccessModal'].forEach(id=>{
@@ -750,13 +743,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 // ── AUTH ──────────────────────────────────────────────────
-function tryShowAppWithoutAuth(){
-  // Show app shell for modules that don't require auth
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('shell').style.display='flex';
-  switchView('registro');
-}
-
 function handleLogin(isAuto=false){
   const email = document.getElementById('loginEmail').value.trim();
   if(!email) return toast('Ingresa un correo','error');
@@ -772,16 +758,15 @@ function handleLogin(isAuto=false){
         document.getElementById('sidebarUser').textContent=user.email;
         switchView('registro');
       } else {
-        if(isAuto){ localStorage.removeItem('flexErp_email'); tryShowAppWithoutAuth(); }
-        else { const m=document.getElementById('loginMsg'); m.className='alert alert-danger py-2 mb-3'; m.textContent='Correo no autorizado para inventario.'; tryShowAppWithoutAuth(); }
+        localStorage.removeItem('flexErp_email');
+        btn.disabled=false; sp.classList.add('d-none');
+        const m=document.getElementById('loginMsg'); m.className='alert alert-danger py-2 mb-3';
+        m.textContent=isAuto?'Sesión expirada. Vuelve a iniciar sesión.':'Correo no autorizado. Usa tu cuenta @flexfilm.com.';
       }
-    }).catch(e=>{ if(!isAuto){ btn.disabled=false; sp.classList.add('d-none'); } tryShowAppWithoutAuth(); });
+    }).catch(e=>{ btn.disabled=false; sp.classList.add('d-none'); const m=document.getElementById('loginMsg'); m.className='alert alert-danger py-2 mb-3'; m.textContent='Error de conexión. Intenta de nuevo.'; });
 }
 
-function focusLogin(){
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('loginEmail').focus();
-}
+
 
 // ── NAVIGATION ───────────────────────────────────────────
 const VIEW_TITLES = { registro:'Registro de Entradas', consulta:'Consultar Historial', inventario:'Control de Stock', reorden:'Punto de Reorden', gin:'Pendientes GIN' };
@@ -795,10 +780,21 @@ function switchView(v){
   currentView=v;
 
   // Show/hide topbar bars
-  document.getElementById('poSearchBar').style.display  = (v==='registro') ? 'flex' : 'none';
-  document.getElementById('invSearchBar').style.display = (v==='inventario'||v==='reorden') ? 'block' : 'none';
-
-  if(v==='inventario'&&!currentUser){ document.getElementById('ginLoginRequired').style.display='block'; }
+  // Dynamic topbar search — only show the bar relevant to current module
+  const sb = document.getElementById('topbarSearch');
+  if(v==='registro'){
+    sb.style.display='block';
+    sb.innerHTML=`<div class="input-group"><input type="text" id="poInput" class="form-control uppercase-input" placeholder="Buscar PO…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter')searchPO()"><button class="btn btn-primary" id="btnSearchPO" onclick="searchPO()" style="border-radius:0 10px 10px 0;"><i class="fas fa-search"></i></button></div>`;
+  } else if(v==='inventario'||v==='reorden'){
+    sb.style.display='block';
+    sb.innerHTML=`<div class="input-group"><input type="text" id="invSearchInput" class="form-control" placeholder="Código, ubicación…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter')searchInventory()"><button class="btn btn-dark" onclick="searchInventory()" style="border-radius:0 10px 10px 0;"><i class="fas fa-search"></i></button></div>`;
+  } else if(v==='consulta'){
+    sb.style.display='block';
+    sb.innerHTML=`<div class="input-group"><input type="text" id="consultaInputTop" class="form-control uppercase-input" placeholder="Buscar en historial…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter'){const ci=document.getElementById('consultaInput');if(ci)ci.value=this.value;runConsulta();}"><button class="btn btn-secondary" onclick="const ci=document.getElementById('consultaInput');const top=document.getElementById('consultaInputTop');if(ci&&top)ci.value=top.value;runConsulta();" style="border-radius:0 10px 10px 0;"><i class="fas fa-search"></i></button></div>`;
+  } else {
+    sb.style.display='none';
+    sb.innerHTML='';
+  }
 
   if(v==='gin'){
     if(!ginInitialData) loadGINData();
