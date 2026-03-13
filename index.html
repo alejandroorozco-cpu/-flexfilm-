@@ -1351,216 +1351,6 @@ async function generatePDFInternal(data,shouldReset,btnId){
   }
 }
 
-function generateQRDataURL(text){
-  return new Promise(resolve=>{
-    const div=document.createElement('div');
-    div.style.cssText='position:fixed;left:-9999px;top:-9999px;width:200px;height:200px';
-    document.body.appendChild(div);
-    try{
-      new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
-      setTimeout(()=>{
-        const img=div.querySelector('canvas');
-        resolve(img?img.toDataURL('image/png'):null);
-        document.body.removeChild(div);
-      },120);
-    }catch(e){document.body.removeChild(div);resolve(null);}
-  });
-}
-
-// Fit font size so text fits within maxW — returns size used
-function fitFs(ctx,text,maxW,maxSize,bold){
-  let fs=maxSize;
-  while(fs>=5){
-    ctx.font=`${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
-    if(ctx.measureText(text).width<=maxW) return fs;
-    fs-=0.5;
-  }
-  return 5;
-}
-
-// Draw one label inside rect (x,y,w,h) — all sizes derived from h
-function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg){
-  ctx.save();
-  ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle='#000'; ctx.lineWidth=1;
-  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
-
-  const pad=w*0.035;
-  const iw=w-pad*2;   // inner width available for text
-  const cx=x+w/2;
-
-  // Zone heights as fraction of h
-  const zh={hdr:0.16,div:0.015,po:0.09,rcv:0.09,usr:0.09,loc:0.09,cod:0.11,qr:0.26,dsc:0.145};
-  let zy=y;
-  const zs={};
-  for(const k of ['hdr','div','po','rcv','usr','loc','cod','qr','dsc']){
-    zs[k]=zy; zy+=zh[k]*h;
-  }
-
-  // ── HEADER: logo + FLEX AMERICAS ──────────────────────────
-  const hh=zh.hdr*h;
-  const titleStr='FLEX AMERICAS';
-  const titleFs=fitFs(ctx,titleStr,iw*0.68,hh*0.68,true);
-  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
-  const titleW=ctx.measureText(titleStr).width;
-  const logoSz=Math.min(hh*0.80,titleFs*1.05);
-  const gap=logoSz*0.28;
-  const blockW=logoSz+gap+titleW;
-  const hMidY=zs.hdr+hh/2;
-
-  if(logoImg){
-    ctx.drawImage(logoImg,cx-blockW/2,hMidY-logoSz/2,logoSz,logoSz);
-  }
-  ctx.fillStyle='#000'; ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
-  ctx.fillText(titleStr,cx-blockW/2+(logoImg?logoSz+gap:0),hMidY);
-
-  // ── DIVIDER ───────────────────────────────────────────────
-  const divY=zs.div+zh.div*h*0.5;
-  ctx.beginPath(); ctx.moveTo(x+4,divY); ctx.lineTo(x+w-4,divY);
-  ctx.lineWidth=0.5; ctx.strokeStyle='#000'; ctx.stroke();
-
-  // ── Row helper: fit & draw centered text in a zone ────────
-  function row(text,zone,bold2,underline){
-    const rh=zh[zone]*h;
-    const fs=fitFs(ctx,text,iw,rh*0.70,bold2);
-    ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
-    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    const ry=zs[zone]+rh/2;
-    ctx.fillText(text,cx,ry);
-    if(underline){
-      const tw=ctx.measureText(text).width;
-      ctx.beginPath(); ctx.moveTo(cx-tw/2,ry+fs*0.55); ctx.lineTo(cx+tw/2,ry+fs*0.55);
-      ctx.lineWidth=0.6; ctx.stroke();
-    }
-  }
-
-  // ── Info rows ─────────────────────────────────────────────
-  const po=item.po||curPO||'';
-  const gin=item.gin||'';
-  const fecha=item.fechaFactura||item.date||new Date().toLocaleDateString('es-MX');
-  const usuario=item.user||item.elaboradoPor||currentUser?.name||'';
-  const location=item.ubicacion||item.location||'';
-  const codigo=item.code||'';
-  const desc=item.description||'';
-
-  row(`PO:${po}       GIN:${gin}`,'po',false,false);
-  row(`RECEIVED ON: ${fecha}`,'rcv',false,false);
-  row(`USER: ${usuario}`,'usr',false,false);
-  row(`LOCATION: ${location}`,'loc',true,true);
-  row(codigo,'cod',true,false);   // sin llaves {}
-
-  // ── QR ────────────────────────────────────────────────────
-  const qh=zh.qr*h;
-  const qrSz=Math.min(qh*0.88,iw*0.55);
-  if(qrImg) ctx.drawImage(qrImg,cx-qrSz/2,zs.qr+(qh-qrSz)/2,qrSz,qrSz);
-
-  // ── Descripción con wrap ──────────────────────────────────
-  const dh=zh.dsc*h;
-  const dMaxFs=dh*0.36;
-  let dfs=fitFs(ctx,desc,iw,dMaxFs,false);
-  ctx.font=`${dfs}px Helvetica,Arial,sans-serif`;
-  const words=desc.split(' '); let line=''; const dlines=[];
-  for(const wd of words){
-    const t=line?line+' '+wd:wd;
-    if(ctx.measureText(t).width>iw&&line){dlines.push(line);line=wd;}else line=t;
-  }
-  if(line)dlines.push(line);
-  const dlh=dfs*1.32;
-  const totalDH=dlines.length*dlh;
-  let dy=zs.dsc+(dh-totalDH)/2+dfs*0.6;
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
-  dlines.slice(0,3).forEach(l=>{ctx.fillText(l,cx,dy);dy+=dlh;});
-
-  ctx.restore();
-}
-
-async function generatePDFInternal(data,shouldReset,btnId){
-  loadBtn(btnId,true);
-  try{
-    const {jsPDF}=window.jspdf;
-    const LOGO_URL='http://drive.google.com/thumbnail?sz=w200&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH';
-
-    // Agrupar por tipo de etiqueta
-    const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
-    data.forEach(r=>{
-      const t=(r.imprimir||'SENCILLA').toUpperCase();
-      if(grupos[t]) for(let i=0;i<Math.max(1,parseInt(r.copies||1));i++) grupos[t].push({...r});
-    });
-
-    // Cargar logo
-    let logoImg=null;
-    try{
-      const li=new Image(); li.crossOrigin='anonymous'; li.src=LOGO_URL;
-      await new Promise((res,rej)=>{li.onload=()=>{logoImg=li;res();};li.onerror=rej;});
-    }catch(e){}
-
-    const pdfFiles={};
-    const MG=8; // margen mm
-
-    for(const tipo of ['SENCILLA','DOBLE','TRIPLE']){
-      const items=grupos[tipo]; if(!items.length) continue;
-
-      let doc, format, orientation;
-      if(tipo==='SENCILLA'){
-        // Landscape: ancho=279mm alto=216mm
-        doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
-        format=[279,216]; orientation='landscape';
-      } else {
-        // Portrait: ancho=216mm alto=279mm
-        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
-        format=[216,279]; orientation='portrait';
-      }
-
-      const [PW,PH]=format;
-      const DPI=3.78; // mm→px @ 96dpi (1mm=3.78px)
-
-      // Para cada página necesitamos un canvas temporal
-      const slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?2:3;
-      const gapMM=tipo==='TRIPLE'?3:4;
-      const labelH=(PH-MG*2-(slotsPerPage-1)*gapMM)/slotsPerPage;
-      const labelW=PW-MG*2;
-
-      for(let idx=0;idx<items.length;idx+=slotsPerPage){
-        if(idx>0) doc.addPage();
-        const cv=document.createElement('canvas');
-        cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
-        const ctx=cv.getContext('2d');
-        ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
-
-        for(let s=0;s<slotsPerPage;s++){
-          const it=items[idx+s]; if(!it) break;
-          const qrURL=it.code||it.description||'';
-          const qrDataURL=await generateQRDataURL(qrURL);
-          const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
-
-          const lx=MG*DPI;
-          const ly=(MG+(s*(labelH+gapMM)))*DPI;
-          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,qrImg,logoImg);
-        }
-
-        // Canvas → PDF page
-        const imgData=cv.toDataURL('image/jpeg',0.92);
-        doc.addImage(imgData,'JPEG',0,0,PW,PH);
-      }
-
-      pdfFiles[tipo]=doc.output('datauristring').split(',')[1];
-    }
-
-    loadBtn(btnId,false);
-    const box=document.getElementById('pdfLinksContainer'); box.innerHTML='';
-    Object.keys(pdfFiles).forEach(k=>{
-      box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start w-100 mb-2" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
-    });
-    document.getElementById('modalPdf').classList.add('show');
-    if(shouldReset) resetEntradas();
-  }catch(err){
-    loadBtn(btnId,false);
-    toast('Error generando PDF: '+err.message,'error');
-    console.error(err);
-  }
-}
-
 function openBase64PDF(b64){ const bytes=atob(b64),arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})),'_blank'); }
 
 function resetEntradas(){ ['poInput','facturaInput','gateEntryInput','ginInput','buyerInput','supplierInput','comentarios'].forEach(id=>document.getElementById(id).value=''); document.getElementById('elaboradoPorSelect').innerHTML=''; document.getElementById('itemsList').innerHTML=''; document.getElementById('recordCount').textContent='0 items'; document.getElementById('subtotal').textContent='$0.00'; document.getElementById('total').textContent='$0.00'; document.getElementById('currencyDisp').textContent='MXN'; curData=[];curPO='';curBuyer='';curSupplier='';stagedPhotos={}; document.getElementById('btnPrint').disabled=true; }
@@ -1920,15 +1710,20 @@ function _respResizeCanvas(c){
   c.getContext('2d').scale(r,r);
 }
 
-document.getElementById('respEmpId').addEventListener('input',function(){
-  if(!respData) return;
-  const emp=respData.empleados.find(e=>e.id===this.value.trim());
-  document.getElementById('respEmpNombre').value=emp?emp.nombre:'';
-});
-document.getElementById('respModalEmpId').addEventListener('input',function(){
-  if(!respData) return;
-  const emp=respData.empleados.find(e=>e.id===this.value.trim());
-  document.getElementById('respModalEmpNombre').value=emp?emp.nombre:'';
+// Attach listeners safely after DOM ready
+document.addEventListener('DOMContentLoaded',function(){
+  const re=document.getElementById('respEmpId');
+  if(re) re.addEventListener('input',function(){
+    if(!respData) return;
+    const emp=respData.empleados.find(e=>e.id===this.value.trim());
+    document.getElementById('respEmpNombre').value=emp?emp.nombre:'';
+  });
+  const rm=document.getElementById('respModalEmpId');
+  if(rm) rm.addEventListener('input',function(){
+    if(!respData) return;
+    const emp=respData.empleados.find(e=>e.id===this.value.trim());
+    document.getElementById('respModalEmpNombre').value=emp?emp.nombre:'';
+  });
 });
 
 function respAgregarItem(){
