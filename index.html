@@ -1251,24 +1251,18 @@ function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg,descMaxChars){
 let _logoImgCache = null;
 async function getLogoImg(){
   if(_logoImgCache) return _logoImgCache;
-  const LOGO_URL='http://drive.google.com/thumbnail?sz=w200&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH';
   try{
-    // Try fetch with no-cors to get blob
-    const resp = await fetch(LOGO_URL, {mode:'cors'});
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const li = new Image(); li.src = url;
-    await new Promise((res,rej)=>{li.onload=res;li.onerror=rej;});
+    // Load logo via GAS backend — avoids CORS/mixed-content issues from GitHub Pages
+    const res = await api('getLogo');
+    if(!res.success || !res.dataUrl) return null;
+    const li = new Image();
+    li.src = res.dataUrl;
+    await new Promise((resolve,reject)=>{li.onload=resolve; li.onerror=reject;});
     _logoImgCache = li;
     return li;
   }catch(e){
-    // Try direct Image load (works if CORS allows)
-    try{
-      const li=new Image(); li.crossOrigin='anonymous';
-      li.src=LOGO_URL+'&t='+Date.now();
-      await new Promise((res,rej)=>{li.onload=()=>{_logoImgCache=li;res();};li.onerror=rej;});
-      return li;
-    }catch(e2){ return null; }
+    console.warn('Logo load failed:', e);
+    return null;
   }
 }
 
@@ -1280,11 +1274,15 @@ async function generatePDFInternal(data,shouldReset,btnId){
     // char limits per type
     const CHAR_LIMITS={SENCILLA:80,DOBLE:40,TRIPLE:30};
 
-    // Group by label type
+    // Group by label type — copies = number of pages
+    // SENCILLA: 1 label/page, DOBLE: same item top+bottom, TRIPLE: same item ×3
     const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
     data.forEach(r=>{
       const t=(r.imprimir||'SENCILLA').toUpperCase();
-      if(grupos[t]) for(let i=0;i<Math.max(1,parseInt(r.copies||1));i++) grupos[t].push({...r});
+      if(grupos[t]){
+        const pages=Math.max(1,parseInt(r.copies||1));
+        for(let i=0;i<pages;i++) grupos[t].push({...r});
+      }
     });
 
     const logoImg = await getLogoImg();
@@ -1305,29 +1303,28 @@ async function generatePDFInternal(data,shouldReset,btnId){
       }
 
       const DPI=3.78;
-      // DOBLE: 1 item per page, drawn TWICE (top half + bottom half = identical copy)
-      // TRIPLE: 3 items per page, each 1/3
-      const slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?1:3;
+      // SENCILLA: 1 slot/page. DOBLE: 2 identical slots/page. TRIPLE: 3 identical slots/page.
+      // Each item in grupos[] = 1 page. copies already expanded above.
+      const slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?2:3;
       const gapMM=tipo==='TRIPLE'?3:4;
-      const drawSlots=tipo==='DOBLE'?2:slotsPerPage; // how many times to draw per page
-      const labelH=(PH-MG*2-(drawSlots-1)*gapMM)/drawSlots;
+      const labelH=(PH-MG*2-(slotsPerPage-1)*gapMM)/slotsPerPage;
       const labelW=PW-MG*2;
 
-      for(let idx=0;idx<items.length;idx+=slotsPerPage){
+      for(let idx=0;idx<items.length;idx++){
         if(idx>0) doc.addPage();
+        const it=items[idx];
         const cv=document.createElement('canvas');
         cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
         const ctx=cv.getContext('2d');
         ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
 
-        for(let s=0;s<drawSlots;s++){
-          // DOBLE: always use items[idx] (same item both copies). TRIPLE/SENCILLA: items[idx+s]
-          const it=tipo==='DOBLE'?items[idx]:items[idx+s]; if(!it) break;
-          // QR encodes just the code for inventory scanner compatibility
-          const qrText=it.code||it.description||'';
-          const qrDataURL=await generateQRDataURL(qrText);
-          const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
+        // Generate QR once per item, reuse for all slots
+        const qrText=it.code||it.description||'';
+        const qrDataURL=await generateQRDataURL(qrText);
+        const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
 
+        for(let s=0;s<slotsPerPage;s++){
+          // Same item drawn in every slot
           const lx=MG*DPI;
           const ly=(MG+(s*(labelH+gapMM)))*DPI;
           drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,qrImg,logoImg,maxChars);
@@ -1892,17 +1889,18 @@ async function loadRespData(){
   if(respData) return;
   try{
     const res = await api('getRespData');
-    if(!res.success) return toast('Error cargando datos Responsiva','error');
+    if(!res.success) return toast('Error Responsiva: '+(res.message||'Sin datos'),'error');
+    if(!res.empleados?.length) return toast('Sin empleados en hoja Responsiva','error');
     respData = res;
     // Fill employee datalist
     const dl = document.getElementById('respEmpList');
     dl.innerHTML = res.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
     // Fill areas/lineas
     const areaEl=document.getElementById('respArea'), lineaEl=document.getElementById('respLinea');
-    areaEl.innerHTML='<option value="">Área…</option>'+res.areas.map(a=>`<option>${a}</option>`).join('');
-    lineaEl.innerHTML='<option value="">Línea…</option>'+res.lineas.map(l=>`<option>${l}</option>`).join('');
-    // Init sig pads
-    _initRespPads();
+    areaEl.innerHTML='<option value="">Área…</option>'+(res.areas||[]).map(a=>`<option>${a}</option>`).join('');
+    lineaEl.innerHTML='<option value="">Línea…</option>'+(res.lineas||[]).map(l=>`<option>${l}</option>`).join('');
+    // Init sig pads (must be visible first)
+    setTimeout(()=>{ _initRespPads(); },150);
     // Start with 1 item
     if(!respItems.length) respAgregarItem();
   }catch(e){ toast('Error: '+e.message,'error'); }
