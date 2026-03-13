@@ -394,7 +394,12 @@
           <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Abre cada registro → <strong>"Agregar a cola"</strong> → pulsa <strong>Guardar Todo</strong>.</small>
         </div>
         <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-          <span></span>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="consultaSelAll(true)"><i class="fas fa-check-square me-1"></i>Todo</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="consultaSelAll(false)"><i class="far fa-square me-1"></i>Ninguno</button>
+            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="consultaEliminarSel()"><i class="fas fa-trash me-1"></i>Eliminar sel.</button>
+            <button class="btn btn-sm fw-bold text-white" style="background:#e53e3e;border:none;border-radius:8px;" onclick="consultaImprimirSel()"><i class="fas fa-print me-1"></i>Reimprimir sel.</button>
+          </div>
           <span class="count-badge ms-auto" id="consultaCount">0 resultados</span>
         </div>
         <div class="consulta-wrap card-box" style="padding:0;overflow:hidden;">
@@ -1176,6 +1181,7 @@ function renderEntradas(){
         <input type="checkbox" class="item-check" style="width:20px;height:20px;accent-color:var(--brand);margin-top:3px;flex-shrink:0;" checked data-i="${i}" onchange="toggleCard(this)">
         <div style="flex:1;min-width:0;">
           <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+            <span style="font-size:.65rem;color:#94a3b8;font-weight:600;letter-spacing:.04em;min-width:22px;text-align:center;background:#f1f5f9;border-radius:4px;padding:1px 5px;">#${i+1}</span>
             <span class="code-badge">${r.code}</span>
             <span class="meta-chip">PR: ${r.pr}</span>
             <span class="meta-chip">User: ${r.user}</span>
@@ -1214,7 +1220,28 @@ function selAll(st){ document.querySelectorAll('.item-check').forEach(c=>{ c.che
 function updEntry(i,k,v){ if(k==='qty'){const max=curData[i].originalQty||0;if(Number(v)>max){toast(`Máximo: ${max}`,'error');v=max;}} if(k==='ubicacion')v=v.toUpperCase(); curData[i][k]=v; if(k==='qty')calcEntradas(); }
 function calcEntradas(){ let s=0; document.querySelectorAll('.item-check:checked').forEach(c=>{const r=curData[c.dataset.i];s+=(Number(r.qty)||0)*(Number(r.unitPrice)||0);}); document.getElementById('subtotal').textContent=`$${s.toFixed(2)}`; document.getElementById('total').textContent=`$${(s*1.16).toFixed(2)}`; }
 function triggerCamera(i){ if(!document.getElementById('facturaInput').value) return toast('Ingrese Factura primero','error'); activePhotoIndex=i; document.getElementById('cameraInput').click(); }
-function handleCameraCapture(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ stagedPhotos[activePhotoIndex]=ev.target.result; document.getElementById(`btnCam-${activePhotoIndex}`)?.classList.add('active'); toast('Foto capturada'); }; r.readAsDataURL(f); e.target.value=''; }
+function handleCameraCapture(e){
+  const f=e.target.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const b64=ev.target.result;
+    // Comprimir: max 800px, quality 0.45 → ~80-120KB desde 4MB
+    const img=new Image(); img.src=b64;
+    img.onload=function(){
+      const MAX=800;
+      let w=img.width, h=img.height;
+      if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=cv.toDataURL('image/jpeg',0.45);
+      stagedPhotos[activePhotoIndex]=compressed;
+      document.getElementById(`btnCam-${activePhotoIndex}`)?.classList.add('active');
+      const kb=Math.round(compressed.length*0.75/1024);
+      toast(`Foto capturada (~${kb}KB)`);
+    };
+  };
+  reader.readAsDataURL(f); e.target.value='';
+}
 
 function getSel(){
   const idxs=Array.from(document.querySelectorAll('.item-check:checked')).map(c=>c.dataset.i);
@@ -1277,6 +1304,21 @@ function fitFs(ctx,text,maxW,maxSize,bold){
   return 5;
 }
 
+
+// Formatear fecha como dd/MMM/yyyy (ej: 15/MAR/2026)
+function fmtLabelDate(raw){
+  const MESES=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  if(!raw) return new Date().toLocaleDateString('es-MX');
+  // raw puede ser 'YYYY-MM-DD' (del input date) o string con /
+  let d;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    const [y,m,dd]=raw.split('-'); d=new Date(+y,+m-1,+dd);
+  } else {
+    d=new Date(raw);
+  }
+  if(isNaN(d)) return raw;
+  return `${String(d.getDate()).padStart(2,'0')}/${MESES[d.getMonth()]}/${d.getFullYear()}`;
+}
 // Draw one label. descMaxChars controls truncation.
 function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg,descMaxChars){
   descMaxChars = descMaxChars || 80;
@@ -1341,7 +1383,7 @@ function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg,descMaxChars){
 
   const po=item.po||curPO||'';
   const gin=item.gin||'';
-  const fecha=item.fechaFactura||item.date||new Date().toLocaleDateString('es-MX');
+  const fecha=fmtLabelDate(item.fechaFactura||item.date||'');
   const usuario=item.user||item.elaboradoPor||currentUser?.name||'';
   const location=item.ubicacion||item.location||'';
   const codigo=item.code||'';
@@ -1495,13 +1537,13 @@ function renderConsulta(headers,items){
   consultaDataMemoria=items||[];
   const thead=document.querySelector('#consultaTable thead'), tbody=document.querySelector('#consultaTable tbody');
   thead.innerHTML=''; tbody.innerHTML='';
-  if(headers?.length){ let h='<tr><th>#</th><th>Acciones</th>'; headers.forEach((hd,i)=>{ h+=i===17?`<th style="display:none">${hd}</th>`:`<th>${hd}</th>`; }); h+='</tr>'; thead.innerHTML=h; }
+  if(headers?.length){ let h='<tr><th style="width:32px"><input type="checkbox" id="chkConsultaAll" onclick="consultaSelAll(this.checked)" title="Sel. todo"></th><th>#</th><th>Acciones</th>'; headers.forEach((hd,i)=>{ h+=i===17?`<th style="display:none">${hd}</th>`:`<th>${hd}</th>`; }); h+='</tr>'; thead.innerHTML=h; }
   if(!items?.length){ tbody.innerHTML=`<tr><td colspan="22" class="text-center text-muted py-5">Sin resultados</td></tr>`; }
   else {
     let html='';
     items.forEach((row,i)=>{
       const eid=row[18]||'';
-      html+=`<tr id="fila-cons-${i}"><td>${i+1}</td><td style="white-space:nowrap">
+      html+=`<tr id="fila-cons-${i}"><td><input type="checkbox" class="consulta-chk" data-i="${i}"></td><td>${i+1}</td><td style="white-space:nowrap">
         <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalEdicion(${i})"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm btn-outline-danger" onclick="abrirModalBorrado(${i})" ${eid?'':'disabled'}><i class="fas fa-trash"></i></button>
       </td>`;
@@ -1649,7 +1691,7 @@ function submitManualFinding(){
   bootstrap.Modal.getInstance(document.getElementById('manualFindingModal')).hide();
   api('addManualFinding',{data,email:currentUser.email}).then(res=>{ toast(res.message,res.success?'success':'error'); document.getElementById('formManual')?.reset(); }).catch(e=>toast(e.message,'error'));
 }
-function syncStock(){ if(!confirm('¿Sincronizar Stock?'))return; const btn=document.getElementById('btnSync');btn.disabled=true; api('ejecutarSincronizacion',{}).then(res=>{btn.disabled=false;toast(res.message,res.success?'success':'error');}).catch(e=>{btn.disabled=false;toast(e.message,'error')}); }
+function syncStock(){ if(!confirm('¿Sincronizar Stock?'))return; const btn=document.getElementById('btnSync');btn.disabled=true; api('ejecutarSincronizacion',{}).then(res=>{ btn.disabled=false; const msg=res.message||''; toast(res.success?msg:(msg.includes('Drive')||msg.includes('is not defined')?'Error: Habilita Drive API en el editor GAS → Servicios → Drive API v2':msg),'error'); }).catch(e=>{btn.disabled=false;toast(e.message,'error')}); }
 
 // ── Scanner ───────────────────────────────────────────────
 function startScanner(ctx){
@@ -1879,7 +1921,12 @@ function _renderRespItems(){
         <div class="col-12"><label class="form-label">Observaciones</label><input type="text" class="form-control uppercase-input ri-obs" data-id="${item.id}" value="${item.obs}"></div>
         <div class="col-md-6">
           <label class="form-label"><i class="fas fa-camera me-1"></i>Foto Evidencia</label>
-          <input type="file" class="form-control form-control-sm ri-foto" data-id="${item.id}" accept="image/*">
+          <input type="file" class="ri-foto" data-id="${item.id}" accept="image/*" style="display:none">
+          <div class="d-flex gap-2 mt-1">
+            <button type="button" class="btn btn-sm btn-primary ri-btn-cam" data-id="${item.id}" style="flex:1"><i class="fas fa-camera me-1"></i>Foto</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary ri-btn-gal" data-id="${item.id}" style="flex:1"><i class="fas fa-images me-1"></i>Galería</button>
+            <span class="ri-foto-ok" data-id="${item.id}" style="display:none;align-items:center;color:#16a34a;font-size:.8rem;"><i class="fas fa-check-circle me-1"></i>Lista</span>
+          </div>
         </div>
         <div class="col-md-6">
           <label class="form-label"><i class="fas fa-users me-1"></i>Co-Responsables</label>
@@ -1903,7 +1950,23 @@ function _renderRespItems(){
     });
     d.querySelector('.ri-desc').addEventListener('input',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.desc=e.target.value.toUpperCase();});
     d.querySelector('.ri-obs').addEventListener('input',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.obs=e.target.value.toUpperCase();});
-    d.querySelector('.ri-foto').addEventListener('change',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.fotoFile=e.target.files[0]||null;});
+    // Foto: cámara
+    d.querySelector('.ri-btn-cam').addEventListener('click',()=>{
+      const inp=d.querySelector('.ri-foto');
+      inp.setAttribute('capture','camera'); inp.click();
+    });
+    // Foto: galería
+    d.querySelector('.ri-btn-gal').addEventListener('click',()=>{
+      const inp=d.querySelector('.ri-foto');
+      inp.removeAttribute('capture'); inp.click();
+    });
+    d.querySelector('.ri-foto').addEventListener('change',e=>{
+      const it=respItems.find(i=>i.id===item.id);
+      if(!it) return;
+      it.fotoFile=e.target.files[0]||null;
+      const ok=d.querySelector('.ri-foto-ok');
+      if(ok) ok.style.display=it.fotoFile?'flex':'none';
+    });
     c.appendChild(d);
   });
 }
@@ -2252,6 +2315,66 @@ function turnoReset(){
     if(icon) icon.style.display='';
     if(inp) inp.value='';
   });
+}
+
+// ── Consulta: selección masiva + reimprimir ───────────────────────────────
+function consultaSelAll(estado){
+  document.querySelectorAll('.consulta-chk').forEach(c=>c.checked=estado);
+  const master=document.getElementById('chkConsultaAll');
+  if(master) master.checked=estado;
+}
+
+function _consultaGetSel(){
+  return Array.from(document.querySelectorAll('.consulta-chk:checked')).map(c=>parseInt(c.dataset.i));
+}
+
+function consultaEliminarSel(){
+  const idxs=_consultaGetSel();
+  if(!idxs.length) return toast('Selecciona al menos 1 registro','error');
+  if(!confirm(`¿Eliminar ${idxs.length} registro(s)? Esta acción no se puede deshacer.`)) return;
+  let done=0,err=0;
+  const process=(arr,cb)=>{
+    if(!arr.length) return cb();
+    const i=arr[0]; const rest=arr.slice(1);
+    const row=consultaDataMemoria[i]; const eid=row?.[18]||'';
+    if(!eid){err++;return process(rest,cb);}
+    api('eliminarRegistro',{entryId:eid}).then(res=>{
+      if(res.success){ done++; document.getElementById(`fila-cons-${i}`)?.remove(); }
+      else err++;
+      process(rest,cb);
+    }).catch(()=>{err++;process(rest,cb);});
+  };
+  loadBtn('btnBuscarConsulta',true);
+  process([...idxs].sort((a,b)=>b-a),()=>{
+    loadBtn('btnBuscarConsulta',false);
+    toast(`✅ ${done} eliminados${err?` · ${err} errores`:''}`);
+    setTimeout(()=>runConsulta(),800);
+  });
+}
+
+function consultaImprimirSel(){
+  const idxs=_consultaGetSel();
+  if(!idxs.length) return toast('Selecciona al menos 1 registro','error');
+  const col=CONFIG_ENTRADAS_COLS||{CODE:6,DESCRIPTION:7,QTY:8,LOCATION:14,USER:13,FACTURA:4,PO:2,GIN:11,ELABORADO_POR:16,FECHA:0};
+  const items=idxs.map(i=>{
+    const r=consultaDataMemoria[i]||[];
+    return {
+      code:       r[6]||'',
+      description:r[7]||'',
+      qty:        r[8]||'',
+      ubicacion:  r[14]||'',
+      location:   r[14]||'',
+      user:       r[13]||'',
+      factura:    r[4]||'',
+      po:         r[2]||'',
+      gin:        r[11]||'',
+      elaboradoPor:r[16]||'',
+      fechaFactura:r[0]||'',
+      imprimir:  'SENCILLA',
+      copies:    1
+    };
+  });
+  generatePDFInternal(items, false, 'btnBuscarConsulta');
 }
 
 </script>
