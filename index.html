@@ -11,6 +11,7 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
   <style>
     /* ══ VARIABLES ══ */
@@ -93,6 +94,17 @@
     /* ══ VIEWS ══ */
     .view { display: none; animation: fadeIn .25s ease; }
     .view.active { display: block; }
+    /* Uniformes cards */
+    .uniform-sel-card { background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .2s; }
+    .uniform-sel-card.selected { border-color:#10b981;background:#ecfdf5;transform:scale(1.04); }
+    .uniform-sel-card.delivered { opacity:.4;pointer-events:none;background:#f1f5f9; }
+    .uc-icon { font-size:1.8rem;color:#94a3b8;margin-bottom:8px; }
+    .uc-label { font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800; }
+    .uc-val { font-weight:700;font-size:1rem;color:#1e293b; }
+    .uc-badge { color:#ef4444;font-size:.65rem;font-weight:800;display:block;margin-top:4px; }
+    /* Responsiva items */
+    .resp-item-card { background:#fff;border:1px solid #e2e8f0;border-left:5px solid #3b82f6;border-radius:10px;padding:14px;margin-bottom:12px;position:relative; }
+    .resp-badge-co { display:inline-flex;align-items:center;gap:6px;background:#1e293b;color:#fff;font-size:.75rem;padding:3px 10px;border-radius:20px;margin:3px; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
     /* ══ SHARED COMPONENTS ══ */
@@ -279,6 +291,15 @@
     <div class="sidebar-section">Gestión GIN</div>
     <button class="nav-item" id="nav-gin" onclick="switchView('gin')">
       <div class="nav-icon"><i class="fas fa-clock"></i></div>Pendientes GIN
+    </button>
+
+    <hr class="nav-divider">
+    <div class="sidebar-section">Recursos Humanos</div>
+    <button class="nav-item" id="nav-responsiva" onclick="switchView('responsiva')">
+      <div class="nav-icon"><i class="fas fa-file-signature"></i></div>Carta Responsiva
+    </button>
+    <button class="nav-item" id="nav-uniformes" onclick="switchView('uniformes')">
+      <div class="nav-icon"><i class="fas fa-tshirt"></i></div>Entrega de Uniformes
     </button>
 
     <div class="sidebar-footer">Alejandro Systems © 2025<br><small id="sidebarUser" style="color:#64748b;"></small></div>
@@ -529,6 +550,168 @@
                 <button class="btn btn-outline-secondary" onclick="ginGoTo(3)"><i class="fas fa-arrow-left me-1"></i>Anterior</button>
                 <button class="btn-main btn-gin" id="btnSubmitGIN" onclick="submitGIN()" style="width:auto;padding:12px 24px;"><i class="fas fa-paper-plane me-2"></i>Enviar Registro</button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ VIEW: CARTA RESPONSIVA ══ -->
+      <div id="view-responsiva" class="view">
+        <div class="card-box">
+          <ul class="nav nav-tabs mb-3" id="respTabs">
+            <li class="nav-item"><button class="nav-link active fw-bold" onclick="switchRespTab('nueva',this)"><i class="fas fa-plus-circle me-1"></i>Nueva Responsiva</button></li>
+            <li class="nav-item"><button class="nav-link fw-bold" onclick="switchRespTab('buscar',this)"><i class="fas fa-search me-1"></i>Buscar / Co-Resp</button></li>
+          </ul>
+
+          <!-- TAB NUEVA -->
+          <div id="resp-tab-nueva">
+            <div class="section-title mb-3"><i class="fas fa-user me-1"></i>Responsable Principal</div>
+            <div class="row g-2 mb-3">
+              <div class="col-6 col-md-3">
+                <label class="form-label">No. Empleado</label>
+                <input type="text" id="respEmpId" class="form-control uppercase-input" list="respEmpList" placeholder="Buscar ID..." autocomplete="off">
+                <datalist id="respEmpList"></datalist>
+              </div>
+              <div class="col-6 col-md-5">
+                <label class="form-label">Nombre</label>
+                <input type="text" id="respEmpNombre" class="form-control" readonly style="background:#f8fafc;">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label">Área</label>
+                <select id="respArea" class="form-select"></select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label">Línea</label>
+                <select id="respLinea" class="form-select"></select>
+              </div>
+            </div>
+
+            <div class="section-title mb-2"><i class="fas fa-tools me-1"></i>Materiales</div>
+            <div id="respHerramientas"></div>
+            <div class="text-end mb-3">
+              <button class="btn btn-sm btn-outline-success" onclick="respAgregarItem()"><i class="fas fa-plus me-1"></i>Agregar Material</button>
+            </div>
+
+            <div class="card-box mb-3" style="border-left:4px solid var(--warn);">
+              <div class="section-title">Firma del Responsable</div>
+              <canvas id="respFirmaMain" style="width:100%;height:160px;border:2px dashed #cbd5e1;border-radius:8px;background:#fff;display:block;"></canvas>
+              <button class="btn btn-sm btn-outline-secondary mt-2" onclick="respPadMain&&respPadMain.clear()">Limpiar</button>
+            </div>
+
+            <button class="btn btn-primary btn-lg w-100 fw-bold" id="btnEnviarResp" onclick="enviarResponsiva()">
+              <span id="respSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+              <i class="fas fa-paper-plane me-2"></i>Registrar y Enviar
+            </button>
+          </div>
+
+          <!-- TAB BUSCAR -->
+          <div id="resp-tab-buscar" style="display:none;">
+            <div class="section-title mb-2"><i class="fas fa-search me-1"></i>Buscar Folio</div>
+            <div class="input-group mb-3">
+              <input type="text" id="respFolioBuscar" class="form-control uppercase-input" placeholder="Ej. CR105">
+              <button class="btn btn-primary" onclick="respBuscarFolio()">Buscar</button>
+            </div>
+            <div id="respResultadoBusqueda"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL CO-RESPONSABLE RESPONSIVA -->
+      <div id="respModalCoResp" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:24px;width:min(480px,95vw);max-height:90vh;overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <strong>Firma Co-Responsable</strong>
+            <button onclick="respCerrarModal()" class="btn btn-sm btn-outline-secondary"><i class="fas fa-times"></i></button>
+          </div>
+          <input type="hidden" id="respModalMode" value="new">
+          <input type="hidden" id="respModalItemId">
+          <input type="hidden" id="respModalFolio">
+          <input type="hidden" id="respModalCod">
+          <div class="row g-2 mb-3">
+            <div class="col-5"><label class="form-label">No. Empleado</label><input type="text" id="respModalEmpId" list="respEmpList" class="form-control uppercase-input" autocomplete="off"></div>
+            <div class="col-7"><label class="form-label">Nombre</label><input type="text" id="respModalEmpNombre" class="form-control" readonly style="background:#f8fafc;"></div>
+          </div>
+          <label class="form-label">Firma</label>
+          <canvas id="respFirmaModal" style="width:100%;height:150px;border:2px dashed #cbd5e1;border-radius:8px;background:#fff;display:block;"></canvas>
+          <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-sm btn-outline-secondary" onclick="respPadModal&&respPadModal.clear()">Borrar firma</button>
+            <button class="btn btn-dark" onclick="respGuardarCoResp()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ VIEW: ENTREGA DE UNIFORMES ══ -->
+      <div id="view-uniformes" class="view">
+        <div class="card-box">
+          <!-- Buscador -->
+          <div id="unifBuscador">
+            <div class="section-title mb-3"><i class="fas fa-search me-1"></i>Buscar Colaborador</div>
+            <div class="input-group input-group-lg">
+              <input type="text" id="unifNumEmp" class="form-control" placeholder="Número de empleado…" autocomplete="off">
+              <button class="btn btn-primary" id="btnBuscarUnif" onclick="unifBuscar()"><i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <!-- Contenido empleado -->
+          <div id="unifContenido" style="display:none;">
+
+            <!-- Alerta adelanto -->
+            <div id="unifAlertAdelanto" style="display:none;border:3px solid #dc3545;background:#fff5f5;border-radius:12px;padding:16px;margin:12px 0;">
+              <div class="d-flex align-items-center gap-3">
+                <i class="fas fa-exclamation-triangle text-danger fa-2x"></i>
+                <div><strong class="text-danger">¡ADELANTO DETECTADO!</strong><br>
+                <span>Registrado: <strong id="unifValAdelanto" class="text-danger"></strong></span><br>
+                <small class="fw-bold">PROHIBIDO ENTREGAR DUPLICADO SIN AUTORIZACIÓN.</small></div>
+              </div>
+            </div>
+
+            <!-- Alerta no autorizado -->
+            <div id="unifAlertNoAuth" style="display:none;border:2px solid #ef4444;background:#fef2f2;border-radius:12px;padding:16px;margin:12px 0;color:#b91c1c;">
+              <i class="fas fa-user-slash me-2"></i><strong>No está considerado para esta entrega.</strong>
+              <p class="mb-0 mt-1">Su organización no cuenta con autorización vigente.</p>
+            </div>
+
+            <!-- Datos generales -->
+            <div class="card-box mt-3">
+              <div class="section-title"><i class="fas fa-id-card me-1"></i>Datos Generales</div>
+              <div class="row g-2 mt-1">
+                <div class="col-6 col-md-3"><div class="form-label">Nombre</div><div id="unifNombre" class="fw-bold"></div></div>
+                <div class="col-6 col-md-2"><div class="form-label">Empleado</div><div id="unifNomina" class="fw-bold"></div></div>
+                <div class="col-6 col-md-3"><div class="form-label">Organización</div><div id="unifOrg" class="fw-bold text-primary"></div></div>
+                <div class="col-6 col-md-2"><div class="form-label">Área</div><div id="unifArea"></div></div>
+                <div class="col-6 col-md-2"><div class="form-label">Pedido</div><div id="unifPedido"></div></div>
+              </div>
+            </div>
+
+            <!-- Artículos -->
+            <div id="unifItemsContainer" class="card-box mt-3">
+              <div class="section-title"><i class="fas fa-shield-halved me-1"></i>Conjunto de Seguridad</div>
+              <div class="row g-3 mt-1">
+                <div class="col-6 col-md-4" id="uwrap-zapatos"><div class="uniform-sel-card" id="ucard-zapatos" onclick="unifToggle('zapatos')"><div class="uc-icon"><i class="fas fa-boot"></i></div><div class="uc-label">Zapatos</div><div class="uc-val" id="uval-zapatos"></div><span class="uc-badge d-none" id="ubadge-zapatos">YA ENTREGADO</span></div></div>
+                <div class="col-6 col-md-4" id="uwrap-camisa"><div class="uniform-sel-card" id="ucard-camisa" onclick="unifToggle('camisa')"><div class="uc-icon"><i class="fas fa-shirt"></i></div><div class="uc-label">Camisa</div><div class="uc-val" id="uval-camisa"></div><span class="uc-badge d-none" id="ubadge-camisa">YA ENTREGADO</span></div></div>
+                <div class="col-6 col-md-4" id="uwrap-pantalon"><div class="uniform-sel-card" id="ucard-pantalon" onclick="unifToggle('pantalon')"><div class="uc-icon"><i class="fas fa-person-half-dress"></i></div><div class="uc-label">Pantalón</div><div class="uc-val" id="uval-pantalon"></div><span class="uc-badge d-none" id="ubadge-pantalon">YA ENTREGADO</span></div></div>
+                <div class="col-6 col-md-4" id="uwrap-overol"><div class="uniform-sel-card" id="ucard-overol" onclick="unifToggle('overol')"><div class="uc-icon"><i class="fas fa-vest"></i></div><div class="uc-label">Overol</div><div class="uc-val" id="uval-overol"></div><span class="uc-badge d-none" id="ubadge-overol">YA ENTREGADO</span></div></div>
+                <div class="col-6 col-md-4" id="uwrap-cofia"><div class="uniform-sel-card" id="ucard-cofia" onclick="unifToggle('cofia')"><div class="uc-icon"><i class="fas fa-head-side-mask"></i></div><div class="uc-label">Cofia</div><div class="uc-val text-success fw-bold" id="uval-cofia">ENTREGAR</div><span class="uc-badge d-none" id="ubadge-cofia">YA ENTREGADO</span></div></div>
+              </div>
+            </div>
+
+            <!-- Firma -->
+            <div id="unifSignArea" class="card-box mt-3" style="display:none;">
+              <div class="section-title"><i class="fas fa-signature me-1"></i>Firma de Conformidad</div>
+              <canvas id="unifFirmaCanvas" style="width:100%;height:180px;border:2px dashed #cbd5e1;border-radius:8px;background:#fff;display:block;margin:12px 0;"></canvas>
+              <button class="btn btn-sm btn-outline-secondary mb-3" onclick="unifPad&&unifPad.clear();unifValidar()">Borrar</button>
+              <div class="form-check mb-3 p-3 bg-light rounded border">
+                <input class="form-check-input me-3" type="checkbox" id="unifCheckAcepto" style="width:22px;height:22px;" onchange="unifValidar()">
+                <label class="form-check-label fw-bold" for="unifCheckAcepto">Confirmo la recepción física de los artículos seleccionados.</label>
+              </div>
+              <button class="btn btn-success w-100 p-3 fw-bold" id="btnUnifFinalizar" disabled onclick="unifFinalizar()">
+                <span id="unifSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+                REGISTRAR Y FINALIZAR
+              </button>
+            </div>
+
+            <div class="text-center mt-3">
+              <button class="btn btn-link text-muted" onclick="unifReset()">← Volver al buscador</button>
             </div>
           </div>
         </div>
@@ -794,7 +977,7 @@ function handleLogin(isAuto=false){
 
 
 // ── NAVIGATION ───────────────────────────────────────────
-const VIEW_TITLES = { registro:'Registro de Entradas', consulta:'Consultar Historial', inventario:'Control de Stock', reorden:'Punto de Reorden', gin:'Pendientes GIN' };
+const VIEW_TITLES = { registro:'Registro de Entradas', consulta:'Consultar Historial', inventario:'Control de Stock', reorden:'Punto de Reorden', gin:'Pendientes GIN', responsiva:'Carta Responsiva', uniformes:'Entrega de Uniformes' };
 
 function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
@@ -823,6 +1006,9 @@ function switchView(v){
 
   if(v==='gin'){
     if(!ginInitialData) loadGINData();
+  }
+  if(v==='responsiva'){
+    loadRespData();
   }
   closeSidebar();
 }
@@ -918,6 +1104,256 @@ function printLabels(){ const rows=getSel(); if(!rows)return; const toPrint=rows
 // ── PDF LOCAL — jsPDF + QRCode ────────────────────────────────────────────────
 const GAS_STOCK_BASE = GAS_URL + '?stock=';
 
+// Truncate text to max chars, wrap into max lines
+function truncLines(text, maxChars, maxLines){
+  if(!text) return [''];
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for(const w of words){
+    const test = cur ? cur+' '+w : w;
+    if(test.length > maxChars && cur){ lines.push(cur); cur=w; if(lines.length>=maxLines) break; }
+    else cur = test;
+  }
+  if(cur && lines.length < maxLines) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+function generateQRDataURL(text){
+  return new Promise(resolve=>{
+    const div=document.createElement('div');
+    div.style.cssText='position:fixed;left:-9999px;top:-9999px;width:200px;height:200px';
+    document.body.appendChild(div);
+    try{
+      new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+      setTimeout(()=>{
+        const img=div.querySelector('canvas');
+        resolve(img?img.toDataURL('image/png'):null);
+        document.body.removeChild(div);
+      },120);
+    }catch(e){document.body.removeChild(div);resolve(null);}
+  });
+}
+
+// Fit font size so text fits within maxW
+function fitFs(ctx,text,maxW,maxSize,bold){
+  let fs=maxSize;
+  while(fs>=5){
+    ctx.font=`${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
+    if(ctx.measureText(text).width<=maxW) return fs;
+    fs-=0.5;
+  }
+  return 5;
+}
+
+// Draw one label. descMaxChars controls truncation.
+function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg,descMaxChars){
+  descMaxChars = descMaxChars || 80;
+  ctx.save();
+  ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='#000'; ctx.lineWidth=1;
+  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+
+  const pad=w*0.035;
+  const iw=w-pad*2;
+  const cx=x+w/2;
+
+  const zh={hdr:0.16,div:0.015,po:0.09,rcv:0.09,usr:0.09,loc:0.09,cod:0.11,qr:0.26,dsc:0.145};
+  let zy=y;
+  const zs={};
+  for(const k of ['hdr','div','po','rcv','usr','loc','cod','qr','dsc']){
+    zs[k]=zy; zy+=zh[k]*h;
+  }
+
+  // ── HEADER ──────────────────────────────────────────────
+  const hh=zh.hdr*h;
+  const titleStr='FLEX AMERICAS';
+  const titleFs=fitFs(ctx,titleStr,iw*0.68,hh*0.68,true);
+  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
+  const titleW=ctx.measureText(titleStr).width;
+  const logoSz=Math.min(hh*0.80,titleFs*1.05);
+  const gap=logoSz*0.28;
+  const blockW=logoSz+gap+titleW;
+  const hMidY=zs.hdr+hh/2;
+
+  if(logoImg){
+    try{ ctx.drawImage(logoImg,cx-blockW/2,hMidY-logoSz/2,logoSz,logoSz); }catch(e){}
+  } else {
+    // Fallback: draw FLEX logo box in blue
+    ctx.fillStyle='#1e3c72';
+    ctx.fillRect(cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz);
+    ctx.fillStyle='#fff';
+    const lfs=Math.max(logoSz*0.3,6);
+    ctx.font=`bold ${lfs}px Helvetica,Arial,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('FLEX',cx-blockW/2+logoSz/2,hMidY);
+    ctx.fillStyle='#000';
+  }
+  ctx.fillStyle='#000'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
+  ctx.fillText(titleStr,cx-blockW/2+logoSz+gap,hMidY);
+
+  // ── DIVIDER ──────────────────────────────────────────────
+  const divY=zs.div+zh.div*h*0.5;
+  ctx.beginPath(); ctx.moveTo(x+4,divY); ctx.lineTo(x+w-4,divY);
+  ctx.lineWidth=0.5; ctx.strokeStyle='#000'; ctx.stroke();
+
+  function row(text,zone,bold2,underline){
+    const rh=zh[zone]*h;
+    const fs=fitFs(ctx,text,iw,rh*0.70,bold2);
+    ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
+    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const ry=zs[zone]+rh/2;
+    ctx.fillText(text,cx,ry);
+    if(underline){
+      const tw=ctx.measureText(text).width;
+      ctx.beginPath(); ctx.moveTo(cx-tw/2,ry+fs*0.55); ctx.lineTo(cx+tw/2,ry+fs*0.55);
+      ctx.lineWidth=0.6; ctx.stroke();
+    }
+  }
+
+  const po=item.po||curPO||'';
+  const gin=item.gin||'';
+  const fecha=item.fechaFactura||item.date||new Date().toLocaleDateString('es-MX');
+  const usuario=item.user||item.elaboradoPor||currentUser?.name||'';
+  const location=item.ubicacion||item.location||'';
+  const codigo=item.code||'';
+  const desc=item.description||'';
+
+  row(`PO:${po}       GIN:${gin}`,'po',false,false);
+  row(`RECEIVED ON: ${fecha}`,'rcv',false,false);
+  row(`USER: ${usuario}`,'usr',false,false);
+  row(`LOCATION: ${location}`,'loc',true,true);
+  row(codigo,'cod',true,false);
+
+  // ── QR ────────────────────────────────────────────────────
+  const qh=zh.qr*h;
+  const qrSz=Math.min(qh*0.88,iw*0.55);
+  if(qrImg) ctx.drawImage(qrImg,cx-qrSz/2,zs.qr+(qh-qrSz)/2,qrSz,qrSz);
+
+  // ── Descripción truncada a descMaxChars, 2 líneas máx ────
+  const dh=zh.dsc*h;
+  const descLines=truncLines(desc,descMaxChars,2);
+  // Fit font to the widest line
+  const widest=descLines.reduce((a,b)=>a.length>b.length?a:b,'x');
+  let dfs=fitFs(ctx,widest,iw,dh*0.36,false);
+  ctx.font=`${dfs}px Helvetica,Arial,sans-serif`;
+  const dlh=dfs*1.32;
+  const totalDH=descLines.length*dlh;
+  let dy=zs.dsc+(dh-totalDH)/2+dfs*0.6;
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
+  descLines.forEach(l=>{ctx.fillText(l,cx,dy);dy+=dlh;});
+
+  ctx.restore();
+}
+
+// Load logo once and cache
+let _logoImgCache = null;
+async function getLogoImg(){
+  if(_logoImgCache) return _logoImgCache;
+  const LOGO_URL='http://drive.google.com/thumbnail?sz=w200&id=1C3pXzq9Hzz7-81zthkAok8T13HxKE-QH';
+  try{
+    // Try fetch with no-cors to get blob
+    const resp = await fetch(LOGO_URL, {mode:'cors'});
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const li = new Image(); li.src = url;
+    await new Promise((res,rej)=>{li.onload=res;li.onerror=rej;});
+    _logoImgCache = li;
+    return li;
+  }catch(e){
+    // Try direct Image load (works if CORS allows)
+    try{
+      const li=new Image(); li.crossOrigin='anonymous';
+      li.src=LOGO_URL+'&t='+Date.now();
+      await new Promise((res,rej)=>{li.onload=()=>{_logoImgCache=li;res();};li.onerror=rej;});
+      return li;
+    }catch(e2){ return null; }
+  }
+}
+
+async function generatePDFInternal(data,shouldReset,btnId){
+  loadBtn(btnId,true);
+  try{
+    const {jsPDF}=window.jspdf;
+
+    // char limits per type
+    const CHAR_LIMITS={SENCILLA:80,DOBLE:40,TRIPLE:30};
+
+    // Group by label type
+    const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
+    data.forEach(r=>{
+      const t=(r.imprimir||'SENCILLA').toUpperCase();
+      if(grupos[t]) for(let i=0;i<Math.max(1,parseInt(r.copies||1));i++) grupos[t].push({...r});
+    });
+
+    const logoImg = await getLogoImg();
+    const pdfFiles={};
+    const MG=8;
+
+    for(const tipo of ['SENCILLA','DOBLE','TRIPLE']){
+      const items=grupos[tipo]; if(!items.length) continue;
+      const maxChars=CHAR_LIMITS[tipo];
+
+      let doc, PW, PH;
+      if(tipo==='SENCILLA'){
+        doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
+        PW=279; PH=216;
+      } else {
+        doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+        PW=216; PH=279;
+      }
+
+      const DPI=3.78;
+      // DOBLE: 1 item per page, drawn TWICE (top half + bottom half = identical copy)
+      // TRIPLE: 3 items per page, each 1/3
+      const slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?1:3;
+      const gapMM=tipo==='TRIPLE'?3:4;
+      const drawSlots=tipo==='DOBLE'?2:slotsPerPage; // how many times to draw per page
+      const labelH=(PH-MG*2-(drawSlots-1)*gapMM)/drawSlots;
+      const labelW=PW-MG*2;
+
+      for(let idx=0;idx<items.length;idx+=slotsPerPage){
+        if(idx>0) doc.addPage();
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+
+        for(let s=0;s<drawSlots;s++){
+          // DOBLE: always use items[idx] (same item both copies). TRIPLE/SENCILLA: items[idx+s]
+          const it=tipo==='DOBLE'?items[idx]:items[idx+s]; if(!it) break;
+          // QR encodes just the code for inventory scanner compatibility
+          const qrText=it.code||it.description||'';
+          const qrDataURL=await generateQRDataURL(qrText);
+          const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
+
+          const lx=MG*DPI;
+          const ly=(MG+(s*(labelH+gapMM)))*DPI;
+          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,qrImg,logoImg,maxChars);
+        }
+
+        const imgData=cv.toDataURL('image/jpeg',0.92);
+        doc.addImage(imgData,'JPEG',0,0,PW,PH);
+      }
+
+      pdfFiles[tipo]=doc.output('datauristring').split(',')[1];
+    }
+
+    loadBtn(btnId,false);
+    const box=document.getElementById('pdfLinksContainer'); box.innerHTML='';
+    Object.keys(pdfFiles).forEach(k=>{
+      box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start w-100 mb-2" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
+    });
+    document.getElementById('modalPdf').classList.add('show');
+    if(shouldReset) resetEntradas();
+  }catch(err){
+    loadBtn(btnId,false);
+    toast('Error generando PDF: '+err.message,'error');
+    console.error(err);
+  }
+}
+
 function generateQRDataURL(text){
   return new Promise(resolve=>{
     const div=document.createElement('div');
@@ -1006,7 +1442,7 @@ function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg){
   const po=item.po||curPO||'';
   const gin=item.gin||'';
   const fecha=item.fechaFactura||item.date||new Date().toLocaleDateString('es-MX');
-  const usuario=item.elaboradoPor||item.user||currentUser?.name||'';
+  const usuario=item.user||item.elaboradoPor||currentUser?.name||'';
   const location=item.ubicacion||item.location||'';
   const codigo=item.code||'';
   const desc=item.description||'';
@@ -1097,7 +1533,7 @@ async function generatePDFInternal(data,shouldReset,btnId){
 
         for(let s=0;s<slotsPerPage;s++){
           const it=items[idx+s]; if(!it) break;
-          const qrURL=GAS_STOCK_BASE+encodeURIComponent(it.code||it.description||'');
+          const qrURL=it.code||it.description||'';
           const qrDataURL=await generateQRDataURL(qrURL);
           const qrImg=qrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}):null;
 
@@ -1438,6 +1874,330 @@ function toast(msg, type='success'){
   document.getElementById('toastMsg').textContent=msg;
   wrap.style.display='block'; clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>wrap.style.display='none',3800);
+}
+
+// ══════════════════════════════════════════════════════════
+//  MÓDULO: CARTA RESPONSIVA
+// ══════════════════════════════════════════════════════════
+let respData=null, respItems=[], respPadMain=null, respPadModal=null;
+
+function switchRespTab(tab, el){
+  document.querySelectorAll('#respTabs .nav-link').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('resp-tab-nueva').style.display = tab==='nueva'?'':'none';
+  document.getElementById('resp-tab-buscar').style.display = tab==='buscar'?'':'none';
+}
+
+async function loadRespData(){
+  if(respData) return;
+  try{
+    const res = await api('getRespData');
+    if(!res.success) return toast('Error cargando datos Responsiva','error');
+    respData = res;
+    // Fill employee datalist
+    const dl = document.getElementById('respEmpList');
+    dl.innerHTML = res.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+    // Fill areas/lineas
+    const areaEl=document.getElementById('respArea'), lineaEl=document.getElementById('respLinea');
+    areaEl.innerHTML='<option value="">Área…</option>'+res.areas.map(a=>`<option>${a}</option>`).join('');
+    lineaEl.innerHTML='<option value="">Línea…</option>'+res.lineas.map(l=>`<option>${l}</option>`).join('');
+    // Init sig pads
+    _initRespPads();
+    // Start with 1 item
+    if(!respItems.length) respAgregarItem();
+  }catch(e){ toast('Error: '+e.message,'error'); }
+}
+
+function _initRespPads(){
+  if(!respPadMain){
+    const c=document.getElementById('respFirmaMain');
+    _respResizeCanvas(c);
+    respPadMain=new SignaturePad(c,{backgroundColor:'white'});
+  }
+}
+
+function _respResizeCanvas(c){
+  const r=Math.max(window.devicePixelRatio||1,1);
+  c.width=c.offsetWidth*r; c.height=c.offsetHeight*r;
+  c.getContext('2d').scale(r,r);
+}
+
+document.getElementById('respEmpId').addEventListener('input',function(){
+  if(!respData) return;
+  const emp=respData.empleados.find(e=>e.id===this.value.trim());
+  document.getElementById('respEmpNombre').value=emp?emp.nombre:'';
+});
+document.getElementById('respModalEmpId').addEventListener('input',function(){
+  if(!respData) return;
+  const emp=respData.empleados.find(e=>e.id===this.value.trim());
+  document.getElementById('respModalEmpNombre').value=emp?emp.nombre:'';
+});
+
+function respAgregarItem(){
+  const id=Date.now();
+  respItems.push({id,cant:1,cod:'',desc:'',obs:'',descLocked:false,responsables:[],fotoFile:null,fotoB64:null});
+  _renderRespItems();
+}
+
+function respEliminarItem(id){
+  if(respItems.length<=1) return toast('Mínimo 1 material','error');
+  respItems=respItems.filter(i=>i.id!==id); _renderRespItems();
+}
+
+function _renderRespItems(){
+  const c=document.getElementById('respHerramientas'); c.innerHTML='';
+  respItems.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='resp-item-card';
+    d.innerHTML=`
+      <button onclick="respEliminarItem(${item.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#ef4444;font-size:1.1rem;cursor:pointer;"><i class="fas fa-times-circle"></i></button>
+      <div class="row g-2">
+        <div class="col-3 col-md-2"><label class="form-label">Cant.</label><input type="number" class="form-control ri-cant" data-id="${item.id}" value="${item.cant}" min="1"></div>
+        <div class="col-9 col-md-3"><label class="form-label">Código</label><input type="text" class="form-control uppercase-input ri-cod" data-id="${item.id}" value="${item.cod}" placeholder="Buscar…" autocomplete="off"></div>
+        <div class="col-12 col-md-7"><label class="form-label">Descripción</label><input type="text" class="form-control uppercase-input ri-desc" data-id="${item.id}" value="${item.desc}" ${item.descLocked?'disabled':''}></div>
+        <div class="col-12"><label class="form-label">Observaciones</label><input type="text" class="form-control uppercase-input ri-obs" data-id="${item.id}" value="${item.obs}"></div>
+        <div class="col-md-6">
+          <label class="form-label"><i class="fas fa-camera me-1"></i>Foto Evidencia</label>
+          <input type="file" class="form-control form-control-sm ri-foto" data-id="${item.id}" accept="image/*">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label"><i class="fas fa-users me-1"></i>Co-Responsables</label>
+          <div class="border rounded p-2 d-flex justify-content-between align-items-center" style="min-height:42px;background:#f8fafc;">
+            <div id="rbadges-${item.id}">${_renderRespBadges(item.responsables,item.id)}</div>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="respAbrirModal(${item.id})"><i class="fas fa-user-plus"></i></button>
+          </div>
+        </div>
+      </div>`;
+    // Events
+    d.querySelector('.ri-cant').addEventListener('input',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.cant=e.target.value;});
+    d.querySelector('.ri-cod').addEventListener('input',e=>{
+      const val=e.target.value.toUpperCase(), it=respItems.find(i=>i.id===item.id);
+      if(!it) return; it.cod=val;
+      if(respData){
+        const found=respData.inventario.find(inv=>inv.cod===val);
+        const descEl=d.querySelector('.ri-desc');
+        if(found){it.desc=found.desc;it.descLocked=true;descEl.value=found.desc;descEl.disabled=true;}
+        else{it.descLocked=false;descEl.disabled=false;}
+      }
+    });
+    d.querySelector('.ri-desc').addEventListener('input',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.desc=e.target.value.toUpperCase();});
+    d.querySelector('.ri-obs').addEventListener('input',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.obs=e.target.value.toUpperCase();});
+    d.querySelector('.ri-foto').addEventListener('change',e=>{const it=respItems.find(i=>i.id===item.id);if(it)it.fotoFile=e.target.files[0]||null;});
+    c.appendChild(d);
+  });
+}
+
+function _renderRespBadges(lista,itemId){
+  if(!lista||!lista.length) return '<span class="text-muted small fst-italic">Nadie</span>';
+  return lista.map((r,i)=>`<span class="resp-badge-co">${r.nombre.split(' ')[0]}<i class="fas fa-times-circle ms-1" style="cursor:pointer;" onclick="respBorrarCoResp(${itemId},${i})"></i></span>`).join('');
+}
+
+function respBorrarCoResp(itemId,idx){
+  const it=respItems.find(i=>i.id===itemId);if(!it)return;
+  it.responsables.splice(idx,1);
+  document.getElementById(`rbadges-${itemId}`).innerHTML=_renderRespBadges(it.responsables,itemId);
+}
+
+let _respModalItemId=null;
+function respAbrirModal(itemId){
+  _respModalItemId=itemId;
+  document.getElementById('respModalMode').value='new';
+  document.getElementById('respModalEmpId').value='';
+  document.getElementById('respModalEmpNombre').value='';
+  if(respPadModal) respPadModal.clear(); else _initRespModalPad();
+  document.getElementById('respModalCoResp').style.display='flex';
+  if(!respPadModal) setTimeout(_initRespModalPad,100);
+}
+
+function _initRespModalPad(){
+  const c=document.getElementById('respFirmaModal');
+  _respResizeCanvas(c);
+  respPadModal=new SignaturePad(c,{backgroundColor:'white'});
+}
+
+function respCerrarModal(){
+  document.getElementById('respModalCoResp').style.display='none';
+}
+
+function respGuardarCoResp(){
+  const mode=document.getElementById('respModalMode').value;
+  const id=document.getElementById('respModalEmpId').value.trim();
+  const nombre=document.getElementById('respModalEmpNombre').value.trim();
+  if(!id||!nombre) return toast('Empleado inválido','error');
+  if(!respPadModal||respPadModal.isEmpty()) return toast('Firma obligatoria','error');
+  if(mode==='new'){
+    const it=respItems.find(i=>i.id===_respModalItemId);
+    if(it){it.responsables.push({id,nombre,firmaBase64:respPadModal.toDataURL()});document.getElementById(`rbadges-${_respModalItemId}`).innerHTML=_renderRespBadges(it.responsables,_respModalItemId);}
+    respCerrarModal();
+  } else {
+    const folio=document.getElementById('respModalFolio').value;
+    const cod=document.getElementById('respModalCod').value;
+    const emp=respData?.empleados.find(e=>e.id===id);
+    const payload={folio,codigoItem:cod,empleadoId:id,empleadoNombre:nombre,firmaBase64:respPadModal.toDataURL()};
+    document.getElementById('btnEnviarResp').disabled=true;
+    api('agregarCoRespTardio',payload).then(r=>{
+      document.getElementById('btnEnviarResp').disabled=false;
+      toast(r.success?'Co-responsable agregado':'Error: '+r.error, r.success?'success':'error');
+      respCerrarModal();
+    }).catch(e=>{document.getElementById('btnEnviarResp').disabled=false;toast(e.message,'error');});
+  }
+}
+
+function respBuscarFolio(){
+  const f=document.getElementById('respFolioBuscar').value.trim();
+  if(!f) return toast('Ingrese un folio','error');
+  api('buscarFolioResp',{folio:f}).then(res=>{
+    const div=document.getElementById('respResultadoBusqueda');
+    if(!res.success) return div.innerHTML=`<div class="alert alert-warning">${res.message||'No encontrado'}</div>`;
+    div.innerHTML='<div class="list-group">'+res.datos.map(d=>`
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div><strong>${d.cod}</strong> — ${d.desc}<br><small class="text-muted">${d.titular}</small></div>
+        <button class="btn btn-sm btn-outline-primary" onclick="respAbrirModalUpdate('${d.folio}','${d.cod}')">Agregar Persona</button>
+      </div>`).join('')+'</div>';
+  }).catch(e=>toast(e.message,'error'));
+}
+
+function respAbrirModalUpdate(folio,cod){
+  document.getElementById('respModalMode').value='update';
+  document.getElementById('respModalFolio').value=folio;
+  document.getElementById('respModalCod').value=cod;
+  document.getElementById('respModalEmpId').value='';
+  document.getElementById('respModalEmpNombre').value='';
+  if(respPadModal) respPadModal.clear(); else _initRespModalPad();
+  document.getElementById('respModalCoResp').style.display='flex';
+  if(!respPadModal) setTimeout(_initRespModalPad,100);
+}
+
+async function enviarResponsiva(){
+  const empId=document.getElementById('respEmpId').value.trim();
+  const empNom=document.getElementById('respEmpNombre').value.trim();
+  const area=document.getElementById('respArea').value;
+  const linea=document.getElementById('respLinea').value;
+  if(!empId||!empNom) return toast('Seleccione un empleado','error');
+  if(!area) return toast('Seleccione un área','error');
+  const itemsValidos=respItems.filter(i=>i.cod);
+  if(!itemsValidos.length) return toast('Agregue al menos un material con código','error');
+  if(!respPadMain||respPadMain.isEmpty()) return toast('La firma del responsable es obligatoria','error');
+  document.getElementById('btnEnviarResp').disabled=true;
+  document.getElementById('respSpinner').classList.remove('d-none');
+  try{
+    const itemsFinal=[];
+    for(const h of itemsValidos){
+      let fotoB64=null;
+      if(h.fotoFile) fotoB64=await _fileToB64(h.fotoFile);
+      itemsFinal.push({cant:h.cant||1,cod:h.cod,desc:h.desc,obs:h.obs,fotoBase64:fotoB64,responsables:h.responsables});
+    }
+    const res=await api('procesarResponsiva',{form:{empleadoId:empId,empleadoNombre:empNom,area,linea,firmaBase64:respPadMain.toDataURL(),jsonItems:JSON.stringify(itemsFinal)}});
+    document.getElementById('btnEnviarResp').disabled=false;
+    document.getElementById('respSpinner').classList.add('d-none');
+    if(res.success){
+      toast(`Responsiva registrada: ${res.id}`,'success');
+      document.getElementById('respEmpId').value='';document.getElementById('respEmpNombre').value='';
+      respItems=[];respPadMain.clear();respAgregarItem();
+    } else toast('Error: '+(res.error||res.message),'error');
+  }catch(e){document.getElementById('btnEnviarResp').disabled=false;document.getElementById('respSpinner').classList.add('d-none');toast(e.message,'error');}
+}
+
+const _fileToB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.readAsDataURL(file);r.onload=()=>res(r.result);r.onerror=rej;});
+
+// ══════════════════════════════════════════════════════════
+//  MÓDULO: UNIFORMES
+// ══════════════════════════════════════════════════════════
+let unifEmp=null, unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false}, unifPad=null;
+
+function unifBuscar(){
+  const num=document.getElementById('unifNumEmp').value.trim();
+  if(!num) return toast('Ingrese número de empleado','error');
+  loadBtn('btnBuscarUnif',true);
+  api('getEmpleadoData',{numEmpleado:num}).then(res=>{
+    loadBtn('btnBuscarUnif',false);
+    if(!res.success) return toast(res.message||'No encontrado','error');
+    unifEmp=res;
+    // Hide search, show content
+    document.getElementById('unifBuscador').style.display='none';
+    document.getElementById('unifContenido').style.display='';
+    // Fill data
+    document.getElementById('unifNombre').textContent=res.nombre;
+    document.getElementById('unifNomina').textContent=res.numEmp;
+    document.getElementById('unifOrg').textContent=res.organizacion;
+    document.getElementById('unifArea').textContent=res.area;
+    document.getElementById('unifPedido').textContent=res.pedido;
+    // Fill values in cards
+    document.getElementById('uval-zapatos').textContent=res.zapatos;
+    document.getElementById('uval-camisa').textContent=res.camisa;
+    document.getElementById('uval-pantalon').textContent=res.pantalon;
+    document.getElementById('uval-overol').textContent=res.overol;
+    // Adelanto alert
+    const alAd=document.getElementById('unifAlertAdelanto');
+    if(res.adelanto&&res.adelanto!=='N/A'){alAd.style.display='';document.getElementById('unifValAdelanto').textContent=res.adelanto;}
+    else alAd.style.display='none';
+    // Auth alert
+    const alAuth=document.getElementById('unifAlertNoAuth');
+    alAuth.style.display=res.autorizado?'none':'';
+    // Mark delivered
+    const items=['zapatos','camisa','pantalon','overol','cofia'];
+    unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false};
+    items.forEach(k=>{
+      const card=document.getElementById(`ucard-${k}`);
+      const badge=document.getElementById(`ubadge-${k}`);
+      card.classList.remove('selected','delivered');
+      if(res.entregados[k]){card.classList.add('delivered');badge.classList.remove('d-none');}
+      else badge.classList.add('d-none');
+    });
+    // Cofia always offered if not delivered
+    if(!res.entregados.cofia) document.getElementById('uval-cofia').textContent='ENTREGAR';
+    // Reset sign area
+    document.getElementById('unifSignArea').style.display='none';
+    if(unifPad) unifPad.clear();
+    document.getElementById('unifCheckAcepto').checked=false;
+    document.getElementById('btnUnifFinalizar').disabled=true;
+  }).catch(e=>{loadBtn('btnBuscarUnif',false);toast(e.message,'error');});
+}
+
+function unifToggle(key){
+  if(!unifEmp?.autorizado) return;
+  unifSel[key]=!unifSel[key];
+  const card=document.getElementById(`ucard-${key}`);
+  card.classList.toggle('selected',unifSel[key]);
+  const hasSel=Object.values(unifSel).some(v=>v);
+  const sa=document.getElementById('unifSignArea');
+  if(hasSel){
+    sa.style.display='';
+    if(!unifPad) setTimeout(_initUnifPad,100);
+  } else sa.style.display='none';
+  unifValidar();
+}
+
+function _initUnifPad(){
+  const c=document.getElementById('unifFirmaCanvas');
+  const r=Math.max(window.devicePixelRatio||1,1);
+  c.width=c.offsetWidth*r; c.height=c.offsetHeight*r; c.getContext('2d').scale(r,r);
+  unifPad=new SignaturePad(c,{backgroundColor:'white'});
+  unifPad.onEnd=unifValidar;
+}
+
+function unifValidar(){
+  const ok=document.getElementById('unifCheckAcepto').checked&&unifPad&&!unifPad.isEmpty();
+  document.getElementById('btnUnifFinalizar').disabled=!ok;
+}
+
+function unifFinalizar(){
+  if(!unifEmp||!unifPad||unifPad.isEmpty()) return;
+  loadBtn('btnUnifFinalizar',true);
+  const payload={...unifEmp,firma:unifPad.toDataURL(),items:unifSel,comentarios:''};
+  api('registrarConformidad',{datos:payload}).then(res=>{
+    loadBtn('btnUnifFinalizar',false);
+    if(res.success){toast('¡Registro exitoso! Firma guardada.','success');unifReset();}
+    else toast('Error: '+res.message,'error');
+  }).catch(e=>{loadBtn('btnUnifFinalizar',false);toast(e.message,'error');});
+}
+
+function unifReset(){
+  unifEmp=null;unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false};
+  document.getElementById('unifContenido').style.display='none';
+  document.getElementById('unifBuscador').style.display='';
+  document.getElementById('unifNumEmp').value='';
+  if(unifPad){unifPad.clear();unifPad=null;}
 }
 </script>
 </body>
