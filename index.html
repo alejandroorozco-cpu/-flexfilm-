@@ -855,142 +855,59 @@ function preloadCaches() {
   _preloadPOIndex();
 }
 
-// ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
-async function _preloadPOIndex() {
-  const cached = cacheGet(CACHE_KEYS.PO);
-  if (cached) {
-    _poCacheIdx = null; _poCacheKey = null; // reset para que se reconstruya con nuevo caché
-    setCacheStatus('PO', 'ok');
-    return;
-  }
-  setCacheStatus('PO', 'loading');
-  try {
-    const res = await api('getCachePOIndex', {});
-    if (res && res.success && res.rows) {
-      const payload = { headers: res.headers, rows: res.rows, ts: Date.now() };
-      cacheSet(CACHE_KEYS.PO, payload);
-      _poCacheIdx = null; _poCacheKey = null; // forzar reconstrucción del índice
-      setCacheStatus('PO', 'ok');
-    } else { setCacheStatus('PO', 'stale'); }
-  } catch(e) { setCacheStatus('PO', 'stale'); }
-}
-
-// Buscar PO en caché local — devuelve objeto igual a lo que devolvía getDataByPO
-// Índice precalculado para búsquedas instantáneas (se calcula una vez por sesión)
-let _poCacheIdx = null;
-let _poCacheKey  = null;   // TTL check
-
-function _buildPOCacheIndex(cacheP) {
-  const h = cacheP.headers;
-  return {
-    PR:     h.indexOf('REQ_CANCELL'),
-    USER:   h.indexOf('REQUESTOR'),
-    CODE:   h.indexOf('ITEM_CODE'),
-    DESC:   h.indexOf('DESCRIPTION'),
-    PO:     h.indexOf('PO_NUMBER'),
-    BUYER:  h.indexOf('BUYER_NAME'),
-    VENDOR: h.indexOf('VENDOR_NAME'),
-    QTY:    h.indexOf('QUANTITY'),
-    UOM:    h.indexOf('PO_UNITS'),
-    CURR:   h.indexOf('POCURR_CODE'),
-    PRICE:  h.indexOf('UNIT_PRICE'),
-    ORG:    h.indexOf('ORG_CODE')
-  };
-}
-
-function buscarPOEnCache(poNumber) {
-  const cacheP = cacheGet(CACHE_KEYS.PO);
-  if (!cacheP || !cacheP.rows || !cacheP.headers) return null;
-
-  // Reconstruir índice solo si el caché cambió (nuevo timestamp)
-  if (_poCacheKey !== cacheP.ts) {
-    _poCacheIdx  = _buildPOCacheIndex(cacheP);
-    _poCacheKey  = cacheP.ts;
-  }
-  const iC = _poCacheIdx;
-  const poClean = poNumber.trim().toUpperCase();
-
-  const matches = cacheP.rows.filter(r => r[iC.PO]?.toString().toUpperCase().trim() === poClean);
-  if (!matches.length) return null;
-  // Deduplicar por PR+CODE igual que el servidor
-  const seen = new Set();
-  const items = [];
-  matches.forEach(r => {
-    const k = `${r[iC.PR]}||${r[iC.CODE]}`;
-    if (!seen.has(k)) {
-      seen.add(k);
-      items.push({
-        pr:          r[iC.PR]  || '',
-        user:        r[iC.USER]|| '',
-        code:        r[iC.CODE]|| '',
-        description: r[iC.DESC]|| '',
-        qty:         Number(r[iC.QTY])  || 0,
-        originalQty: Number(r[iC.QTY])  || 0,
-        uom:         r[iC.UOM] || '',
-        unitPrice:   Number(r[iC.PRICE])|| 0,
-        currency:    r[iC.CURR]|| 'MXN',
-        buyer:       r[iC.BUYER]  || '',
-        buyerAsignado: r[iC.BUYER] || '',
-        supplier:    r[iC.VENDOR] || '',
-        po:          r[iC.PO]  || poClean
-      });
-    }
-  });
-  if (!items.length) return null;
-  // Obtener elaboradoPor del caché de usuarios si existe
-  const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
-  const elaboradoPorSet = new Set();
-  if (cacheE && cacheE.rows) {
-    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
-  }
-  return {
-    success: true, items,
-    buyer:    items[0]?.buyer   || '',
-    supplier: items[0]?.supplier|| '',
-    currency: items[0]?.currency|| 'MXN',
-    elaboradoPorOpciones: [...elaboradoPorSet],
-    fromCache: true
-  };
-}
-
-async function _preloadEntradas() {
-  // Si ya hay caché válida, usarla
-  const cached = cacheGet(CACHE_KEYS.ENTRADAS);
-  if (cached) { setCacheStatus('Entradas', 'ok'); return; }
-  setCacheStatus('Entradas', 'loading');
-  try {
-    const res = await api('getCacheEntradas', {});
-    if (res && res.success && res.rows) {
-      cacheSet(CACHE_KEYS.ENTRADAS, { headers: res.headers, rows: res.rows, ts: Date.now() });
-      setCacheStatus('Entradas', 'ok');
-    } else { setCacheStatus('Entradas', 'stale'); }
-  } catch(e) { setCacheStatus('Entradas', 'stale'); }
-}
-
-async function _preloadInventario() {
-  const cached = cacheGet(CACHE_KEYS.INV);
-  if (cached) { setCacheStatus('Inv', 'ok'); return; }
-  setCacheStatus('Inv', 'loading');
-  try {
-    const res = await api('getCacheInventario', {});
-    if (res && res.success && res.rows) {
-      cacheSet(CACHE_KEYS.INV, { rows: res.rows, ts: Date.now() });
-      setCacheStatus('Inv', 'ok');
-    } else { setCacheStatus('Inv', 'stale'); }
-  } catch(e) { setCacheStatus('Inv', 'stale'); }
-}
-
-// Forzar refresco de caché (botón en sidebar)
 async function forceRefreshCache() {
+  // Limpiar localStorage para entradas e inventario
   cacheClear(CACHE_KEYS.ENTRADAS);
   cacheClear(CACHE_KEYS.INV);
-  cacheClear(CACHE_KEYS.PO);
+  // Limpiar RAM y sessionStorage para PO
+  _poIndexData = null; _poCacheIdx = null; _poCacheKey = null;
+  try { sessionStorage.removeItem('ffErp_poIndexSession'); } catch(e) {}
   setCacheStatus('Entradas', 'loading');
   setCacheStatus('Inv', 'loading');
   setCacheStatus('PO', 'loading');
   toast('Actualizando caché…', 'info');
   await Promise.all([_preloadEntradas(), _preloadInventario(), _preloadPOIndex()]);
   toast('Caché actualizada ✓');
+}
+
+// ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
+async function _preloadPOIndex() {
+  // 1. Si ya está en RAM — instantáneo
+  if (_poIndexData && _poIndexData.rows && _poIndexData.rows.length > 0) {
+    setCacheStatus('PO', 'ok');
+    return;
+  }
+
+  // 2. Intentar sessionStorage (se limpia al cerrar tab, límite ~50MB)
+  try {
+    const raw = sessionStorage.getItem('ffErp_poIndexSession');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.rows && parsed.rows.length > 0) {
+        _poIndexData = parsed;
+        _poCacheIdx  = null; _poCacheKey = null;
+        setCacheStatus('PO', 'ok');
+        return;
+      }
+    }
+  } catch(e) { /* sessionStorage no disponible */ }
+
+  // 3. Descargar del servidor
+  setCacheStatus('PO', 'loading');
+  try {
+    const res = await api('getCachePOIndex', {});
+    if (res && res.success && res.rows && res.rows.length > 0) {
+      _poIndexData = { headers: res.headers, rows: res.rows, ts: Date.now() };
+      _poCacheIdx  = null; _poCacheKey = null;
+      // Guardar en sessionStorage para recarga de página
+      try { sessionStorage.setItem('ffErp_poIndexSession', JSON.stringify(_poIndexData)); } catch(e) {}
+      setCacheStatus('PO', 'ok');
+    } else {
+      setCacheStatus('PO', 'stale');
+    }
+  } catch(e) {
+    setCacheStatus('PO', 'stale');
+  }
 }
 
 // Buscar ubicación de un código en caché (prioridad: Entradas → Inventario)
@@ -1069,6 +986,11 @@ let editQueue = [];
 let invData = [], invPendingUpdates = {}, invItemsCache = {}, invSortDirs = [true,true,true,true,true];
 let ginPOData = null, ginSelectedItems = [], ginFacturaFiles = [], ginMaterialFiles = [], ginInitialData = null;
 let codeReader = null, scanContext = 'search';
+
+// PO_INDEX en RAM — no cabe en localStorage (>5MB), vive en memoria de la pestaña
+let _poIndexData = null;   // { headers:[], rows:[], ts:0 }
+let _poCacheIdx  = null;   // índice de columnas precalculado
+let _poCacheKey  = null;   // ts del último build del índice
 
 // ── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -1460,9 +1382,8 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
   const pad = w*0.035, iw = w-pad*2, cx = x+w/2;
 
-  // ── Zonas verticales ─────────────────────────────────────
-  // hdr=16%, po=10%, rcv=10%, usr=10%, loc=10%, cod=13%, bot=41%
-  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.13, bot:0.41 };
+  // ── Zonas verticales: hdr=16% po=10% rcv=10% usr=10% loc=10% cod=14% desc+bc=30%
+  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.14, bot:0.30 };
   let zy = y; const zs = {};
   for (const k of ['hdr','po','rcv','usr','loc','cod','bot']) { zs[k]=zy; zy+=zh[k]*h; }
 
@@ -1484,93 +1405,92 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
   ctx.fillText(titleStr, cx-blockW/2+logoSz+gap, hMidY);
 
-  // ── FILAS DE INFO ────────────────────────────────────────
+  // ── FILAS DE INFO ─────────────────────────────────────────
+  // QR izquierdo: arranca desde la zona PO hasta el fondo
+  // El texto de las filas usa el ancho RESTANTE después del QR
+  // Calculamos el QR primero para saber el ancho disponible para el texto
+  const qrZoneH = (y + h) - zs.po - pad*0.5;   // alto desde PO hasta fondo
+  const qrZoneW = w * 0.26;                      // 26% del ancho para QR
+  // El QR real depende de lo que quepa cuadrado en esa zona
+  const qrSz    = Math.min(qrZoneW - pad, qrZoneH);
+  const qrX     = x + (qrZoneW - qrSz) / 2;
+  const qrY     = zs.po + (qrZoneH - qrSz) / 2; // centrado verticalmente
+
+  // Ancho disponible para texto de filas (evitar solapar con QR)
+  const textStartX = x + qrZoneW + pad * 0.3;
+  const textAvailW  = (x + w - pad) - textStartX;
+  const textCx     = textStartX + textAvailW / 2;
+
   function row(text, zone, bold2, underline) {
-    const rh=zh[zone]*h, fs=fitFs(ctx,text,iw,rh*0.72,bold2);
+    const rh = zh[zone]*h;
+    const fs = fitFs(ctx, text, textAvailW, rh*0.72, bold2);
     ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
     ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    const ry=zs[zone]+rh/2; ctx.fillText(text,cx,ry);
-    if (underline){ const tw=ctx.measureText(text).width; ctx.beginPath(); ctx.moveTo(cx-tw/2,ry+fs*0.55); ctx.lineTo(cx+tw/2,ry+fs*0.55); ctx.lineWidth=0.6; ctx.stroke(); }
+    const ry = zs[zone]+rh/2;
+    ctx.fillText(text, textCx, ry);
+    if (underline) {
+      const tw = ctx.measureText(text).width;
+      ctx.beginPath(); ctx.moveTo(textCx-tw/2,ry+fs*0.55); ctx.lineTo(textCx+tw/2,ry+fs*0.55);
+      ctx.lineWidth=0.6; ctx.stroke();
+    }
   }
   row(`PO:${item.po||curPO||''}       GIN:${item.gin||''}`, 'po', false, false);
   row(`RECEIVED ON: ${fmtLabelDate(item.fechaFactura||item.date||'')}`, 'rcv', false, false);
   row(`USER: ${item.user||item.elaboradoPor||currentUser?.name||''}`, 'usr', false, false);
   row(`LOCATION: ${item.ubicacion||item.location||''}`, 'loc', true, true);
-  row(item.code||'', 'cod', true, false);
 
-  // ── ZONA INFERIOR ────────────────────────────────────────
+  // ── CÓDIGO — centrado en ancho de texto, tamaño grande ───
+  const codRh = zh.cod*h;
+  const codFs = fitFs(ctx, item.code||'', textAvailW, codRh*0.80, true);
+  ctx.font=`bold ${codFs}px Helvetica,Arial,sans-serif`;
+  ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(item.code||'', textCx, zs.cod+codRh/2);
+
+  // ── ZONA BOT: barcode + descripción ──────────────────────
   const botY = zs.bot;
   const botH = zh.bot * h;
 
-  ctx.beginPath(); ctx.moveTo(x+pad,botY); ctx.lineTo(x+w-pad,botY);
-  ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5; ctx.setLineDash([4,4]); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Columna izquierda (QR) = 26% del ancho
-  const leftW  = w * 0.26;
-  const gapLR  = pad * 0.4;
-  const rightX = x + leftW + gapLR;
-  const rightW = w - leftW - gapLR - pad;
-
-  // ── QR STOCK ─────────────────────────────────────────────
-  // Sube a la altura de LOCATION (zs.loc) para que quede
-  // visualmente alineado con esa zona y el barcode quede centrado
-  // abajo. El QR empieza desde zs.loc y cubre hasta el fondo de botH.
-  const qrTopY  = zs.loc;                       // ← sube a LOCATION
-  const qrAvail = (y + h) - qrTopY - pad*0.3;   // alto disponible hasta el fondo
-  const qrSz    = Math.min(leftW - pad, qrAvail);
-  const qrX     = x + (leftW - qrSz) / 2;
-
-  if (stockQrImg) {
-    try { ctx.drawImage(stockQrImg, qrX, qrTopY, qrSz, qrSz); } catch(e){} 
-  }
-
-  // ── BARCODE ──────────────────────────────────────────────
-  // Alto: 23% del botH — chico pero legible
-  // Centrado verticalmente en botH
-  const bcH         = botH * 0.23;
-  const bcW         = rightW;
-  const bcX         = rightX;
-  // Centrar el barcode en la zona bot: (botH - bcH) / 2
-  const bcVertPad   = (botH - bcH) / 2;
-  const bcY         = botY + bcVertPad;
+  // Barcode: justo debajo del código, ancho = textAvailW, alto = 35% de botH
+  const bcH    = botH * 0.35;
+  const bcW    = textAvailW;
+  const bcX    = textStartX;
+  const bcY    = botY + botH * 0.03;
 
   if (barcodeImg) {
     try { ctx.drawImage(barcodeImg, bcX, bcY, bcW, bcH); } catch(e){} 
   }
 
-  // ── DESCRIPCIÓN ──────────────────────────────────────────
-  // Escribe la oración completa, baja de renglón donde no quepa (px reales)
-  // Máximo 2 líneas — lo que no quepa en la 2da línea simplemente se corta al final
-  // Letra grande fija — no se achica por longitud del texto
-  const descAreaY = botY + bcVertPad + bcH + botH * 0.03;
-  const descAreaH = (y + h) - descAreaY - pad * 0.3;
-
-  // Tamaño de letra: que cada línea ocupe ~44% de descAreaH
-  let dfs = descAreaH * 0.44;
-  dfs = Math.max(dfs, 9);  // mínimo absoluto
-
+  // Descripción: debajo del barcode, letra grande, 2 líneas máx
+  // Mide en px reales para bajar de renglón correctamente
+  const descY0  = bcY + bcH + botH * 0.04;
+  const descH   = (y + h) - descY0 - pad * 0.2;
+  const lineH   = descH / 2;               // 2 renglones que llenan el espacio
+  let dfs = lineH * 0.80;
+  dfs = Math.max(dfs, 8);
   ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
 
-  // Usar wrapTextCanvas para partir por ancho real
-  const descLines = wrapTextCanvas(ctx, item.description||'', rightW, 2);
-
-  const descCx = rightX + rightW / 2;
-  const dlh    = dfs * 1.22;
-  const totalDH = descLines.length * dlh;
-  let dy = descAreaY + (descAreaH - totalDH) / 2 + dfs * 0.75;
+  // wrapTextCanvas parte donde no quepa (px reales), máx 2 líneas
+  const descLines = wrapTextCanvas(ctx, item.description||'', textAvailW, 2);
+  const descCx    = textStartX + textAvailW / 2;
+  const dlh       = dfs * 1.20;
+  const totalDH   = descLines.length * dlh;
+  let dy = descY0 + (descH - totalDH)/2 + dfs*0.75;
 
   ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
   descLines.forEach(l => {
-    // Clip para que nunca se salga del área asignada
     ctx.save();
     ctx.beginPath();
-    ctx.rect(rightX, dy - dfs * 1.1, rightW, dfs * 1.4);
+    ctx.rect(textStartX, dy - dfs*1.1, textAvailW, dfs*1.4);
     ctx.clip();
     ctx.fillText(l, descCx, dy);
     ctx.restore();
     dy += dlh;
   });
+
+  // ── QR STOCK — izquierda, centrado verticalmente desde PO ─
+  if (stockQrImg) {
+    try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e){} 
+  }
 
   ctx.restore();
 }
@@ -2032,4 +1952,62 @@ function turnoReset(){['turnoSel','turnoSaliente','turnoEntrante','turnoIncidenc
 
 </script>
 </body>
-</html>
+</html>function buscarPOEnCache(poNumber) {
+  // Leer de RAM — instantáneo, igual que buscarEnCacheEntradas
+  if (!_poIndexData || !_poIndexData.rows || !_poIndexData.rows.length) return null;
+
+  // Reconstruir índice de columnas solo si cambió
+  if (_poCacheKey !== _poIndexData.ts) {
+    _poCacheIdx = _buildPOCacheIndex(_poIndexData);
+    _poCacheKey = _poIndexData.ts;
+  }
+  const iC = _poCacheIdx;
+  const poClean = poNumber.trim().toUpperCase();
+
+  const matches = _poIndexData.rows.filter(r =>
+    r[iC.PO]?.toString().toUpperCase().trim() === poClean
+  );
+  if (!matches.length) return null;
+
+  const seen = new Set();
+  const items = [];
+  matches.forEach(r => {
+    const k = `${r[iC.PR]}||${r[iC.CODE]}`;
+    if (!seen.has(k)) {
+      seen.add(k);
+      items.push({
+        pr:          r[iC.PR]?.toString()    || '',
+        user:        r[iC.USER]?.toString()  || '',
+        code:        r[iC.CODE]?.toString()  || '',
+        description: r[iC.DESC]?.toString()  || '',
+        qty:         Number(r[iC.QTY])       || 0,
+        originalQty: Number(r[iC.QTY])       || 0,
+        uom:         r[iC.UOM]?.toString()   || '',
+        unitPrice:   Number(r[iC.PRICE])     || 0,
+        currency:    r[iC.CURR]?.toString()  || 'MXN',
+        buyer:       r[iC.BUYER]?.toString() || '',
+        buyerAsignado: r[iC.BUYER]?.toString() || '',
+        supplier:    r[iC.VENDOR]?.toString()|| '',
+        po:          r[iC.PO]?.toString()    || poClean
+      });
+    }
+  });
+  if (!items.length) return null;
+
+  // elaboradoPor del historial de entradas (caché local)
+  const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
+  const elaboradoPorSet = new Set();
+  if (cacheE && cacheE.rows) {
+    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
+  }
+
+  return {
+    success: true, items,
+    buyer:    items[0]?.buyer    || '',
+    supplier: items[0]?.supplier || '',
+    currency: items[0]?.currency || 'MXN',
+    elaboradoPorOpciones: [...elaboradoPorSet],
+    fromCache: true
+  };
+}
+
