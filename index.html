@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -42,7 +41,7 @@
     .topbar-title{font-size:.95rem;font-weight:700;letter-spacing:-.3px;flex:1}
     .topbar-user{font-size:.78rem;color:var(--muted);font-weight:500}
     #btnMenuMobile{display:none;background:none;border:none;font-size:1.2rem;color:var(--text);cursor:pointer}
-    #content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;padding-bottom:80px}
+    #content{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px}
     @media(max-width:768px){
       #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
       #sidebar.open{transform:translateX(0)}
@@ -93,25 +92,16 @@
     .summary-bar{background:linear-gradient(135deg,var(--brand),#0098ff);border-radius:var(--radius);padding:14px 18px;color:#fff;display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:16px}
     .s-label{font-size:.7rem;opacity:.75;text-transform:uppercase;letter-spacing:.5px}
     .s-val{font-size:1.05rem;font-weight:700}
-
-    /* ── FIX 4: Scroll horizontal en móvil para tablas ── */
-    .consulta-wrap{overflow-x:auto;border-radius:var(--radius);-webkit-overflow-scrolling:touch}
-    #consultaTable{min-width:900px;font-size:.8rem}
+    .consulta-wrap{overflow-x:auto;border-radius:var(--radius)}
+    #consultaTable{min-width:860px;font-size:.8rem}
     #consultaTable thead th{background:#1a1f36;color:#fff;padding:9px 11px;white-space:nowrap}
-    #consultaTable tbody td{padding:8px 11px;vertical-align:middle;white-space:nowrap}
+    #consultaTable tbody td{padding:8px 11px;vertical-align:middle}
     #consultaTable tbody tr:hover{background:var(--brand-light)}
-
-    /* Columna Acciones sticky en móvil */
-    #consultaTable thead th:nth-child(3),
-    #consultaTable tbody td:nth-child(3){
-      position:sticky;left:0;background:#1a1f36;z-index:2;white-space:nowrap
-    }
-    #consultaTable tbody td:nth-child(3){background:#fff}
-    #consultaTable tbody tr:hover td:nth-child(3){background:var(--brand-light)}
-
-    /* Inventario table scroll */
-    .inv-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    .inv-table{min-width:680px;font-size:.82rem}
+    .batch-panel{background:linear-gradient(135deg,#eef2ff,#f0f9ff);border:2px solid var(--brand);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+    .batch-count{background:var(--brand);color:#fff;font-size:.72rem;padding:2px 9px;border-radius:20px;font-weight:700}
+    .pending-chip{display:inline-flex;align-items:center;gap:5px;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:600;margin:3px}
+    .pending-chip .rm{cursor:pointer}
+    .inv-table{min-width:700px;font-size:.82rem}
     .inv-table thead th{background:#1a1f36;color:#fff;padding:9px 11px;white-space:nowrap;cursor:pointer}
     .inv-table thead th:hover{background:#2d3748}
     .inv-table tbody td{padding:8px 11px;vertical-align:middle}
@@ -119,11 +109,6 @@
     .diff-pos{background:#d1e7dd;color:#0f5132;font-weight:700;padding:2px 6px;border-radius:4px}
     .diff-neg{background:#f8d7da;color:#842029;font-weight:700;padding:2px 6px;border-radius:4px}
     .diff-zero{color:#6c757d;font-size:.9em}
-
-    .batch-panel{background:linear-gradient(135deg,#eef2ff,#f0f9ff);border:2px solid var(--brand);border-radius:var(--radius);padding:14px;margin-bottom:14px}
-    .batch-count{background:var(--brand);color:#fff;font-size:.72rem;padding:2px 9px;border-radius:20px;font-weight:700}
-    .pending-chip{display:inline-flex;align-items:center;gap:5px;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:600;margin:3px}
-    .pending-chip .rm{cursor:pointer}
     .floating-save{position:fixed;bottom:16px;right:16px;z-index:1040;display:none}
     @media(min-width:769px){.floating-save{bottom:24px;right:24px}}
     .step-progress{display:flex;justify-content:space-between;margin-bottom:24px;position:relative}
@@ -168,16 +153,14 @@
     .login-logo{text-align:center;margin-bottom:24px}
     .login-logo img{height:50px}
     hr.divider{border:none;border-top:1.5px solid var(--border);margin:10px 0}
-    .cache-status{font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:600;margin-left:4px}
+    /* Cache status indicator */
+    .cache-status{font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:600;margin-left:6px}
     .cache-ok{background:#dcfce7;color:#166534}
     .cache-loading{background:#fef9c3;color:#854d0e}
     .cache-stale{background:#fee2e2;color:#991b1b}
+    /* Ubicación sugerida */
     .loc-suggest{font-size:.7rem;color:var(--brand);font-weight:600;margin-top:3px;cursor:pointer;display:none}
     .loc-suggest:hover{text-decoration:underline}
-
-    /* Reimprimir selector en modal consulta */
-    .reimpr-select-wrap{margin-top:12px;padding:10px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)}
-    .reimpr-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.82rem}
   </style>
 </head>
 <body>
@@ -252,11 +235,11 @@
     <div class="sidebar-footer">
       Alejandro Systems © 2025<br>
       <small id="sidebarUser" style="color:#64748b;"></small><br>
-      <!-- FIX 5: Labels corregidos — Reg / Inv / PO -->
+      <!-- Cache status -->
       <div id="cacheStatusBar" style="margin-top:6px;font-size:.65rem;">
-        <span id="cacheEntradas" class="cache-status cache-loading">Reg: ⟳</span>
-        <span id="cacheInv"     class="cache-status cache-loading">Inv: ⟳</span>
-        <span id="cachePO"      class="cache-status cache-loading">PO: ⟳</span>
+        <span id="cacheEntradas" class="cache-status cache-loading">Entradas…</span>
+        <span id="cacheInv" class="cache-status cache-loading">Inv…</span>
+        <span id="cachePO" class="cache-status cache-loading">PO…</span>
         <button onclick="forceRefreshCache()" style="background:none;border:none;color:#64748b;font-size:.65rem;cursor:pointer;margin-left:4px;" title="Actualizar caché"><i class="fas fa-sync"></i></button>
       </div>
     </div>
@@ -353,8 +336,7 @@
             <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="consultaSelAll(true)"><i class="fas fa-check-square me-1"></i>Todo</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="consultaSelAll(false)"><i class="far fa-square me-1"></i>Ninguno</button>
             <button class="btn btn-sm btn-outline-danger fw-bold" id="btnEliminarSel" onclick="consultaEliminarSel()"><i class="fas fa-trash me-1"></i>Eliminar sel.</button>
-            <!-- FIX 2: Botón reimprimir abre modal para elegir tipo -->
-            <button class="btn btn-sm fw-bold text-white" style="background:#e53e3e;border:none;border-radius:8px;" onclick="consultaImprimirSelModal()"><i class="fas fa-print me-1"></i>Reimprimir sel.</button>
+            <button class="btn btn-sm fw-bold text-white" style="background:#e53e3e;border:none;border-radius:8px;" onclick="consultaImprimirSel()"><i class="fas fa-print me-1"></i>Reimprimir sel.</button>
           </div>
           <span class="count-badge ms-auto" id="consultaCount">0 resultados</span>
         </div>
@@ -382,9 +364,8 @@
           <i class="fas fa-search fa-3x text-muted opacity-25"></i>
           <p class="text-muted mt-3">Usa el buscador en la barra superior</p>
         </div>
-        <!-- FIX 4: wrapper con overflow-x para scroll horizontal en móvil -->
         <div id="invWrapper" class="card-box" style="display:none;padding:0;overflow:hidden;">
-          <div class="inv-table-wrap">
+          <div class="overflow-auto">
             <table class="table table-hover mb-0 inv-table" id="invTable">
               <thead><tr>
                 <th onclick="sortInv(0)">Ubicación</th><th onclick="sortInv(1)">Org</th>
@@ -791,33 +772,6 @@
   </div>
 </div>
 
-<!-- FIX 2: Modal reimprimir con selector de tipo -->
-<div id="modalReimprimir" class="modal-overlay">
-  <div class="modal-card" style="max-width:420px;">
-    <div class="modal-head" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;">
-      <div class="fw-bold"><i class="fas fa-print me-2"></i>Reimprimir Etiquetas</div>
-      <button onclick="document.getElementById('modalReimprimir').classList.remove('show')" class="btn btn-sm btn-light">✕</button>
-    </div>
-    <div class="modal-body-pad">
-      <p class="text-muted mb-3" style="font-size:.85rem;"><span id="reimprCount">0</span> registro(s) seleccionado(s). Elige el tipo de etiqueta:</p>
-      <div class="d-grid gap-2">
-        <button class="btn btn-outline-danger fw-bold" onclick="ejecutarReimprimir('SENCILLA')">
-          <i class="fas fa-file me-2"></i>Sencilla (1 por página, carta horizontal)
-        </button>
-        <button class="btn btn-outline-warning fw-bold" onclick="ejecutarReimprimir('DOBLE')">
-          <i class="fas fa-file-alt me-2"></i>Doble (2 por página, carta vertical)
-        </button>
-        <button class="btn btn-outline-primary fw-bold" onclick="ejecutarReimprimir('TRIPLE')">
-          <i class="fas fa-layer-group me-2"></i>Triple (3 por página, carta vertical)
-        </button>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button onclick="document.getElementById('modalReimprimir').classList.remove('show')" class="btn btn-outline-secondary">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 <!-- GIN success modal -->
 <div id="ginSuccessModal" class="modal-overlay">
   <div class="modal-card" style="max-width:400px;">
@@ -849,266 +803,155 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script>
 // ╔══════════════════════════════════════════════════════════╗
-// ║  FLEXFILM ERP v2.1 — CORRECCIONES                       ║
-// ║  Fix 1: buscarPOEnCache + _buildPOCacheIndex DENTRO del ║
-// ║         <script> donde deben estar                      ║
-// ║  Fix 2: Reimprimir con selector de tipo                 ║
-// ║  Fix 3: GIN busca en caché antes de ir al servidor      ║
-// ║  Fix 4: Scroll móvil — overflow-x en tablas             ║
-// ║  Fix 5: Label "PO:" correcto en sidebar                 ║
+// ║  FLEXFILM ERP v2 — JS UNIFICADO CON CACHÉ CLIENTE       ║
 // ╚══════════════════════════════════════════════════════════╝
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyO3ZSmXw7nqq7GeWmTMlCbqAmOGU57wyGeZfI5VG8mzg1rWpG1c_eNBfcH11TXo8WJIQ/exec";
 
 // ══════════════════════════════════════════════════════════
-//  CACHE CLIENTE
+//  CACHE CLIENTE — sessionStorage (se limpia al cerrar tab)
+//  + versión persistente en localStorage con TTL de 8 horas
 // ══════════════════════════════════════════════════════════
-const CACHE_TTL_MS = 8 * 60 * 60 * 1000;
-const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache', PO: 'ffErp_poIndex',MAPEO: 'ffErp_mapeoUsuarios' };
-let _mapeoUsuarios = null; // { usuarios:{}, compradores:{}, elaboradoPor:[] }
+const CACHE_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
+const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache', PO: 'ffErp_poIndex' };
 
-  async function _preloadMapeoUsuarios() {
-  // 1. RAM
-  if (_mapeoUsuarios) return;
-  // 2. localStorage
-  const cached = cacheGet(CACHE_KEYS.MAPEO);
-  if (cached) { _mapeoUsuarios = cached; return; }
-  // 3. Servidor
-  try {
-    const res = await api('getCacheMapeoUsuarios', {});
-    if (res && res.success) {
-      _mapeoUsuarios = {
-        usuarios:    res.usuarios    || {},
-        compradores: res.compradores || {},
-        elaboradoPor: res.elaboradoPor || []
-      };
-      cacheSet(CACHE_KEYS.MAPEO, _mapeoUsuarios);
-    }
-  } catch(e) { console.warn('Mapeo usuarios no disponible:', e); }
-}
-  function _aplicarMapeoCliente(items) {
-  if (!_mapeoUsuarios) return items;
-  const { usuarios, compradores } = _mapeoUsuarios;
-  return items.map(it => {
-    const uKey = it.user?.toString().trim().toUpperCase()  || '';
-    const bKey = it.buyer?.toString().trim().toUpperCase() || '';
-    return {
-      ...it,
-      user:          usuarios[uKey]    || it.user,
-      buyerAsignado: compradores[bKey] || it.buyer
-    };
-  });
-}
 function cacheSet(key, data) {
-  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+  } catch(e) { /* cuota llena — ignorar */ }
 }
+
 function cacheGet(key) {
   try {
-    const raw = localStorage.getItem(key); if (!raw) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
     const obj = JSON.parse(raw);
     if (Date.now() - obj.ts > CACHE_TTL_MS) { localStorage.removeItem(key); return null; }
     return obj.data;
   } catch(e) { return null; }
 }
-function cacheClear(key) { try { localStorage.removeItem(key); } catch(e) {} }
 
-// FIX 5: setCacheStatus usa prefijos correctos (Reg / Inv / PO)
-function setCacheStatus(module, status) {
-  const el = document.getElementById('cache' + module);
-  if (!el) return;
-  const labels  = { ok:'✓ Cache', loading:'⟳ …', stale:'! Desact.', off:'— Sin cache' };
-  const classes = { ok:'cache-ok', loading:'cache-loading', stale:'cache-stale', off:'cache-stale' };
-  const prefix  = { Entradas:'Reg', Inv:'Inv', PO:'PO' };
-  el.className = 'cache-status ' + (classes[status] || 'cache-loading');
-  el.textContent = (prefix[module] || module) + ': ' + (labels[status] || status);
+function cacheClear(key) {
+  try { localStorage.removeItem(key); } catch(e) {}
 }
 
-function preloadCaches() { _preloadEntradas(); _preloadInventario(); _preloadPOIndex(); _preloadMapeoUsuarios(); }
+// Indicadores visuales de caché en sidebar
+function setCacheStatus(module, status) {
+  // module: 'Entradas' | 'Inv'
+  // status: 'ok' | 'loading' | 'stale' | 'off'
+  const el = document.getElementById('cache' + module);
+  if (!el) return;
+  const labels = { ok: '✓ Cache', loading: '⟳ Cargando…', stale: '! Desact.', off: '— Sin cache' };
+  const classes = { ok: 'cache-ok', loading: 'cache-loading', stale: 'cache-stale', off: 'cache-stale' };
+  el.className = 'cache-status ' + (classes[status] || 'cache-loading');
+  el.textContent = (module === 'Entradas' ? 'Reg' : 'Inv') + ': ' + (labels[status] || status);
+}
+
+// Precargar ambos índices en background justo después del login
+function preloadCaches() {
+  _preloadEntradas();
+  _preloadInventario();
+  _preloadPOIndex();
+}
 
 async function forceRefreshCache() {
-  cacheClear(CACHE_KEYS.ENTRADAS); cacheClear(CACHE_KEYS.INV);
+  // Limpiar localStorage para entradas e inventario
+  cacheClear(CACHE_KEYS.ENTRADAS);
+  cacheClear(CACHE_KEYS.INV);
+  // Limpiar RAM y sessionStorage para PO
   _poIndexData = null; _poCacheIdx = null; _poCacheKey = null;
   try { sessionStorage.removeItem('ffErp_poIndexSession'); } catch(e) {}
-  setCacheStatus('Entradas','loading'); setCacheStatus('Inv','loading'); setCacheStatus('PO','loading');
-  toast('Actualizando caché…','info');
+  setCacheStatus('Entradas', 'loading');
+  setCacheStatus('Inv', 'loading');
+  setCacheStatus('PO', 'loading');
+  toast('Actualizando caché…', 'info');
   await Promise.all([_preloadEntradas(), _preloadInventario(), _preloadPOIndex()]);
   toast('Caché actualizada ✓');
 }
 
+// ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
 async function _preloadEntradas() {
   const cached = cacheGet(CACHE_KEYS.ENTRADAS);
-  if (cached) { setCacheStatus('Entradas','ok'); return; }
-  setCacheStatus('Entradas','loading');
+  if (cached) { setCacheStatus('Entradas', 'ok'); return; }
+  setCacheStatus('Entradas', 'loading');
   try {
     const res = await api('getCacheEntradas', {});
-    if (res?.success && res.rows) {
+    if (res && res.success && res.rows) {
       cacheSet(CACHE_KEYS.ENTRADAS, { headers: res.headers, rows: res.rows, ts: Date.now() });
-      setCacheStatus('Entradas','ok');
-    } else { setCacheStatus('Entradas','stale'); }
-  } catch(e) { setCacheStatus('Entradas','stale'); }
+      setCacheStatus('Entradas', 'ok');
+    } else { setCacheStatus('Entradas', 'stale'); }
+  } catch(e) { setCacheStatus('Entradas', 'stale'); }
 }
 
 async function _preloadInventario() {
   const cached = cacheGet(CACHE_KEYS.INV);
-  if (cached) { setCacheStatus('Inv','ok'); return; }
-  setCacheStatus('Inv','loading');
+  if (cached) { setCacheStatus('Inv', 'ok'); return; }
+  setCacheStatus('Inv', 'loading');
   try {
     const res = await api('getCacheInventario', {});
-    if (res?.success && res.rows) {
+    if (res && res.success && res.rows) {
       cacheSet(CACHE_KEYS.INV, { rows: res.rows, ts: Date.now() });
-      setCacheStatus('Inv','ok');
-    } else { setCacheStatus('Inv','stale'); }
-  } catch(e) { setCacheStatus('Inv','stale'); }
+      setCacheStatus('Inv', 'ok');
+    } else { setCacheStatus('Inv', 'stale'); }
+  } catch(e) { setCacheStatus('Inv', 'stale'); }
 }
 
-// PO_INDEX en RAM
-let _poIndexData = null;
-let _poCacheIdx  = null;
-let _poCacheKey  = null;
-
 async function _preloadPOIndex() {
-  if (_poIndexData?.rows?.length > 0) { setCacheStatus('PO','ok'); return; }
+  // 1. Si ya está en RAM — instantáneo
+  if (_poIndexData && _poIndexData.rows && _poIndexData.rows.length > 0) {
+    setCacheStatus('PO', 'ok');
+    return;
+  }
+
+  // 2. Intentar sessionStorage (se limpia al cerrar tab, límite ~50MB)
   try {
     const raw = sessionStorage.getItem('ffErp_poIndexSession');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.rows?.length > 0) {
-        _poIndexData = parsed; _poCacheIdx = null; _poCacheKey = null;
-        setCacheStatus('PO','ok'); return;
+      if (parsed && parsed.rows && parsed.rows.length > 0) {
+        _poIndexData = parsed;
+        _poCacheIdx  = null; _poCacheKey = null;
+        setCacheStatus('PO', 'ok');
+        return;
       }
     }
-  } catch(e) {}
-  setCacheStatus('PO','loading');
+  } catch(e) { /* sessionStorage no disponible */ }
+
+  // 3. Descargar del servidor
+  setCacheStatus('PO', 'loading');
   try {
     const res = await api('getCachePOIndex', {});
-    if (res?.success && res.rows?.length > 0) {
+    if (res && res.success && res.rows && res.rows.length > 0) {
       _poIndexData = { headers: res.headers, rows: res.rows, ts: Date.now() };
-      _poCacheIdx = null; _poCacheKey = null;
+      _poCacheIdx  = null; _poCacheKey = null;
+      // Guardar en sessionStorage para recarga de página
       try { sessionStorage.setItem('ffErp_poIndexSession', JSON.stringify(_poIndexData)); } catch(e) {}
-      setCacheStatus('PO','ok');
-    } else { setCacheStatus('PO','stale'); }
-  } catch(e) { setCacheStatus('PO','stale'); }
-}
-
-// ══════════════════════════════════════════════════════════
-//  FIX 1: _buildPOCacheIndex y buscarPOEnCache DENTRO del <script>
-// ══════════════════════════════════════════════════════════
-function _buildPOCacheIndex(poData) {
-  if (!poData?.headers?.length) return null;
-  const h = poData.headers.map(x => x?.toString().trim().toUpperCase());
-  return {
-    PR:     h.indexOf('REQ_CANCELL'),
-    USER:   h.indexOf('REQUESTOR'),
-    CODE:   h.indexOf('ITEM_CODE'),
-    DESC:   h.indexOf('DESCRIPTION'),
-    PO:     h.indexOf('PO_NUMBER'),
-    BUYER:  h.indexOf('BUYER_NAME'),
-    VENDOR: h.indexOf('VENDOR_NAME'),
-    QTY:    h.indexOf('QUANTITY'),
-    UOM:    h.indexOf('PO_UNITS'),
-    CURR:   h.indexOf('POCURR_CODE'),
-    PRICE:  h.indexOf('UNIT_PRICE'),
-    ORG:    h.indexOf('ORG_CODE')
-  };
-}
-
-function buscarPOEnCache(poNumber) {
-  if (!_poIndexData?.rows?.length) return null;
-  if (_poCacheKey !== _poIndexData.ts) {
-    _poCacheIdx = _buildPOCacheIndex(_poIndexData);
-    _poCacheKey = _poIndexData.ts;
-  }
-  if (!_poCacheIdx) return null;
-  const iC = _poCacheIdx;
-  const poClean = poNumber.trim().toUpperCase();
-  const matches = _poIndexData.rows.filter(r =>
-    r[iC.PO]?.toString().toUpperCase().trim() === poClean
-  );
-  if (!matches.length) return null;
-  const seen = new Set(); const items = [];
-  matches.forEach(r => {
-    const k = `${r[iC.PR]}||${r[iC.CODE]}`;
-    if (!seen.has(k)) {
-      seen.add(k);
-      items.push({
-        pr:          r[iC.PR]?.toString()    || '',
-        user:        r[iC.USER]?.toString()  || '',
-        code:        r[iC.CODE]?.toString()  || '',
-        description: r[iC.DESC]?.toString()  || '',
-        qty:         Number(r[iC.QTY])       || 0,
-        originalQty: Number(r[iC.QTY])       || 0,
-        uom:         r[iC.UOM]?.toString()   || '',
-        unitPrice:   Number(r[iC.PRICE])     || 0,
-        currency:    r[iC.CURR]?.toString()  || 'MXN',
-        buyer:       r[iC.BUYER]?.toString() || '',
-        buyerAsignado: r[iC.BUYER]?.toString() || '',
-        supplier:    r[iC.VENDOR]?.toString()|| '',
-        po:          r[iC.PO]?.toString()    || poClean
-      });
+      setCacheStatus('PO', 'ok');
+    } else {
+      setCacheStatus('PO', 'stale');
     }
-  });
-if (!items.length) return null;
-
-  // ── Aplicar mapeo de nombres (igual que el servidor) ──────
-  const itemsMapped = _aplicarMapeoCliente(items);
-
-  // elaboradoPor: primero del mapeo, luego del historial de entradas
-  const elaboradoPorOpciones = (_mapeoUsuarios?.elaboradoPor?.length)
-    ? _mapeoUsuarios.elaboradoPor
-    : (() => {
-        const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
-        const set = new Set();
-        if (cacheE && cacheE.rows) cacheE.rows.forEach(r => { if (r[16]) set.add(r[16]); });
-        return [...set];
-      })();
-
-  return {
-    success: true,
-    items:    itemsMapped,
-    buyer:    itemsMapped[0]?.buyerAsignado || itemsMapped[0]?.buyer || '',
-    supplier: itemsMapped[0]?.supplier      || '',
-    currency: itemsMapped[0]?.currency      || 'MXN',
-    elaboradoPorOpciones,
-    fromCache: true
-  };
-
-// FIX 3: buscar PO en caché también para GIN
-function buscarGINPOEnCache(poNumber) {
-  const result = buscarPOEnCache(poNumber);
-  if (!result) return null;
-  // Adaptar formato al que espera displayGINPOResults
-  return {
-    success:    true,
-    items:      result.items.map(it => ({
-      ITEM_CODE:   it.code,
-      DESCRIPTION: it.description,
-      QUANTITY:    it.qty,
-      REQ_CANCELL: it.pr,
-      VENDOR_NAME: it.supplier,
-      ORG_CODE:    '',
-      BUYER_NAME:  it.buyer
-    })),
-    vendorName: result.supplier,
-    orgCode:    '',
-    buyerName:  result.buyer,
-    fromCache:  true
-  };
+  } catch(e) {
+    setCacheStatus('PO', 'stale');
+  }
 }
 
-// Buscar ubicación de un código
+// Buscar ubicación de un código en caché (prioridad: Entradas → Inventario)
 function buscarUbicacionPorCodigo(codigo) {
   if (!codigo) return null;
   const codeUp = codigo.toString().toUpperCase().trim();
+  // 1) Buscar en caché de entradas (columna CODE=6, LOCATION=14)
   try {
     const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
-    if (cacheE?.rows) {
+    if (cacheE && cacheE.rows) {
+      // Buscar la última entrada de este código que tenga ubicación
       const matches = cacheE.rows.filter(r => r[6]?.toString().toUpperCase().trim() === codeUp && r[14]?.toString().trim() !== '');
       if (matches.length > 0) return matches[matches.length - 1][14].toString().trim();
     }
   } catch(e) {}
+  // 2) Buscar en caché de inventario (col 0=code, col 4=locator)
   try {
     const cacheI = cacheGet(CACHE_KEYS.INV);
-    if (cacheI?.rows) {
+    if (cacheI && cacheI.rows) {
       const match = cacheI.rows.find(r => r[0]?.toString().toUpperCase().trim() === codeUp && r[4]?.toString().trim() !== '');
       if (match) return match[4].toString().trim();
     }
@@ -1116,18 +959,20 @@ function buscarUbicacionPorCodigo(codigo) {
   return null;
 }
 
+// Búsqueda LOCAL en caché de entradas (para el módulo Consulta)
 function buscarEnCacheEntradas(termino, colIndex) {
   const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
-  if (!cacheE?.rows) return null;
+  if (!cacheE || !cacheE.rows) return null; // no hay caché
   const term = termino.toString().toLowerCase().trim();
-  const col  = parseInt(colIndex, 10);
+  const col = parseInt(colIndex, 10);
   const results = cacheE.rows.filter(row => row.length > col && row[col]?.toString().toLowerCase().trim().includes(term));
   return { headers: cacheE.headers, rows: results, fromCache: true };
 }
 
+// Búsqueda LOCAL en caché de inventario
 function buscarEnCacheInventario(searchTerm) {
   const cacheI = cacheGet(CACHE_KEYS.INV);
-  if (!cacheI?.rows) return null;
+  if (!cacheI || !cacheI.rows) return null;
   const terms = searchTerm.toUpperCase().split(/[\s,]+/).filter(t => t.length > 0);
   return cacheI.rows.filter(item => {
     const code = item[0]?.toString().toUpperCase() || '';
@@ -1151,7 +996,7 @@ async function api(action, payload = {}) {
     if (!response.ok) throw new Error('HTTP ' + response.status);
     const text = await response.text();
     try { return JSON.parse(text); }
-    catch(e) { throw new Error('Respuesta inválida del servidor'); }
+    catch(e) { console.error('Resp no JSON:', text.substring(0,300)); throw new Error('Respuesta inválida del servidor'); }
   } catch(error) { console.error('Error API [' + action + ']:', error); throw error; }
 }
 
@@ -1167,6 +1012,11 @@ let invData = [], invPendingUpdates = {}, invItemsCache = {}, invSortDirs = [tru
 let ginPOData = null, ginSelectedItems = [], ginFacturaFiles = [], ginMaterialFiles = [], ginInitialData = null;
 let codeReader = null, scanContext = 'search';
 
+// PO_INDEX en RAM — no cabe en localStorage (>5MB), vive en memoria de la pestaña
+let _poIndexData = null;   // { headers:[], rows:[], ts:0 }
+let _poCacheIdx  = null;   // índice de columnas precalculado
+let _poCacheKey  = null;   // ts del último build del índice
+
 // ── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('fechaFacturaInput').value = new Date().toISOString().split('T')[0];
@@ -1175,9 +1025,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cameraInputEdit').addEventListener('change', handleCameraEditCapture);
   document.getElementById('facturaFiles').addEventListener('change', e => handleGINFiles(e.target.files,'factura'));
   document.getElementById('materialFiles').addEventListener('change', e => handleGINFiles(e.target.files,'material'));
-  ['modalEdicion','modalConfirmDelete','modalPdf','ginSuccessModal','modalReimprimir'].forEach(id => {
+
+  ['modalEdicion','modalConfirmDelete','modalPdf','ginSuccessModal'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('show'); });
   });
+
   const saved = localStorage.getItem('flexErp_email');
   if (saved) { document.getElementById('loginEmail').value = saved; handleLogin(true); }
 });
@@ -1197,19 +1049,15 @@ function handleLogin(isAuto = false) {
       document.getElementById('topbarUser').textContent = user.name;
       document.getElementById('sidebarUser').textContent = user.email;
       switchView('registro');
+      // Precargar caches en background
       setTimeout(preloadCaches, 800);
     } else {
       localStorage.removeItem('flexErp_email');
-      if (!isAuto) { btn.disabled = false; sp.classList.add('d-none'); }
-      const m = document.getElementById('loginMsg');
-      m.className = 'alert alert-danger py-2 mb-3';
-      m.textContent = isAuto ? 'Sesión expirada.' : (user?.message || 'Correo no autorizado.');
+      btn.disabled = false; sp.classList.add('d-none');
+      const m = document.getElementById('loginMsg'); m.className = 'alert alert-danger py-2 mb-3';
+      m.textContent = isAuto ? 'Sesión expirada. Vuelve a iniciar sesión.' : (user?.message || 'Correo no autorizado.');
     }
-  }).catch(() => {
-    if (!isAuto) { btn.disabled = false; document.getElementById('loginSpinner').classList.add('d-none'); }
-    const m = document.getElementById('loginMsg'); m.className = 'alert alert-danger py-2 mb-3';
-    m.textContent = 'Error de conexión. Intenta de nuevo.';
-  });
+  }).catch(e => { btn.disabled = false; sp.classList.add('d-none'); const m = document.getElementById('loginMsg'); m.className = 'alert alert-danger py-2 mb-3'; m.textContent = 'Error de conexión. Intenta de nuevo.'; });
 }
 
 // ── NAVIGATION ───────────────────────────────────────────
@@ -1233,6 +1081,7 @@ function switchView(v) {
   document.getElementById(`nav-${v}`)?.classList.add('active');
   document.getElementById('topbarTitle').textContent = VIEW_TITLES[v] || v;
   currentView = v;
+
   const sb = document.getElementById('topbarSearch');
   if (v === 'registro') {
     sb.style.display = 'block';
@@ -1244,6 +1093,7 @@ function switchView(v) {
     sb.style.display = 'block';
     sb.innerHTML = `<div class="input-group"><input type="text" id="consultaInputTop" class="form-control uppercase-input" placeholder="Buscar en historial…" style="border-radius:10px 0 0 10px;" onkeypress="if(event.key==='Enter'){const ci=document.getElementById('consultaInput');if(ci)ci.value=this.value;runConsulta();}"><button class="btn btn-secondary" onclick="const ci=document.getElementById('consultaInput');const top=document.getElementById('consultaInputTop');if(ci&&top)ci.value=top.value;runConsulta();" style="border-radius:0 10px 10px 0;"><i class="fas fa-search"></i></button></div>`;
   } else { sb.style.display = 'none'; sb.innerHTML = ''; }
+
   if (v === 'gin' && !ginInitialData) loadGINData();
   if (v === 'responsiva') loadRespData();
   if (v === 'turno') turnoCargarResponsables();
@@ -1251,19 +1101,21 @@ function switchView(v) {
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
-function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
 
 // ══════════════════════════════════════════════════════════
 //  MÓDULO: REGISTRO DE ENTRADAS
 // ══════════════════════════════════════════════════════════
 function searchPO() {
-  const po = document.getElementById('poInput')?.value?.trim();
+  const po = document.getElementById('poInput').value.trim();
   if (!po) return toast('Ingrese número de PO','error');
-  // FIX 1: buscarPOEnCache ahora está definida correctamente
+
+  // Intentar caché local primero
   const localResult = buscarPOEnCache(po);
   if (localResult) {
     _applyPOResult(localResult, po);
     toast(`${localResult.items.length} items — caché local`, 'info');
+    // Actualizar mapeador de elaboradoPor desde servidor en background si no hay opciones
     if (!localResult.elaboradoPorOpciones?.length) {
       api('getElaboradoPorOpciones', {}).then(r => {
         if (r?.opciones?.length) {
@@ -1275,6 +1127,8 @@ function searchPO() {
     }
     return;
   }
+
+  // Sin caché: ir al servidor
   loadBtn('btnSearchPO', true);
   api('getDataByPO', { poNumber: po }).then(res => {
     loadBtn('btnSearchPO', false);
@@ -1286,7 +1140,7 @@ function searchPO() {
 
 function _applyPOResult(res, po) {
   curData = res.items; curPO = po; curBuyer = res.buyer; curSupplier = res.supplier;
-  document.getElementById('buyerInput').value    = res.buyer;
+  document.getElementById('buyerInput').value = res.buyer;
   document.getElementById('supplierInput').value = res.supplier;
   document.getElementById('currencyDisp').textContent = res.currency;
   if (res.elaboradoPorOpciones?.length) elaboradoPorOpciones = res.elaboradoPorOpciones;
@@ -1302,8 +1156,9 @@ function renderEntradas() {
   document.getElementById('recordCount').textContent = `${curData.length} items`;
   curData.forEach((r, i) => {
     r.imprimir = r.imprimir || 'SENCILLA'; r.copies = r.copies || 1;
+    // Buscar ubicación sugerida del caché
     const locSugerida = buscarUbicacionPorCodigo(r.code);
-    if (locSugerida && !r.ubicacion) r.ubicacion = locSugerida;
+    if (locSugerida && !r.ubicacion) r.ubicacion = locSugerida; // pre-fill si no tiene
     const div = document.createElement('div');
     div.className = 'item-card selected'; div.id = `item-card-${i}`;
     div.innerHTML = `
@@ -1311,7 +1166,7 @@ function renderEntradas() {
         <input type="checkbox" class="item-check" style="width:20px;height:20px;accent-color:var(--brand);margin-top:3px;flex-shrink:0;" checked data-i="${i}" onchange="toggleCard(this)">
         <div style="flex:1;min-width:0;">
           <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-            <span style="font-size:.65rem;color:#94a3b8;font-weight:600;background:#f1f5f9;border-radius:4px;padding:1px 5px;">#${i+1}</span>
+            <span style="font-size:.65rem;color:#94a3b8;font-weight:600;letter-spacing:.04em;min-width:22px;text-align:center;background:#f1f5f9;border-radius:4px;padding:1px 5px;">#${i+1}</span>
             <span class="code-badge">${r.code}</span>
             <span class="meta-chip">PR: ${r.pr}</span>
             <span class="meta-chip">User: ${r.user}</span>
@@ -1332,8 +1187,8 @@ function renderEntradas() {
         <div><label class="form-label">Imprimir</label>
           <select class="form-select" onchange="updEntry(${i},'imprimir',this.value)">
             <option value="SENCILLA" ${r.imprimir==='SENCILLA'?'selected':''}>Sencilla</option>
-            <option value="DOBLE"    ${r.imprimir==='DOBLE'?'selected':''}   >Doble</option>
-            <option value="TRIPLE"   ${r.imprimir==='TRIPLE'?'selected':''}  >Triple</option>
+            <option value="DOBLE" ${r.imprimir==='DOBLE'?'selected':''}>Doble</option>
+            <option value="TRIPLE" ${r.imprimir==='TRIPLE'?'selected':''}>Triple</option>
             <option value="NO">No</option>
           </select>
         </div>
@@ -1350,340 +1205,564 @@ function renderEntradas() {
 
 function aplicarSugerencia(i, loc) {
   curData[i].ubicacion = loc;
-  const inp = document.getElementById(`ubicInput-${i}`); if (inp) inp.value = loc;
-  const sug = document.getElementById(`locSug-${i}`);   if (sug) sug.style.display = 'none';
+  const inp = document.getElementById(`ubicInput-${i}`);
+  if (inp) inp.value = loc;
+  const sug = document.getElementById(`locSug-${i}`);
+  if (sug) sug.style.display = 'none';
 }
+
 function toggleCard(chk) { document.getElementById(`item-card-${chk.dataset.i}`).classList.toggle('selected',chk.checked); calcEntradas(); }
 function selAll(st) { document.querySelectorAll('.item-check').forEach(c => { c.checked = st; toggleCard(c); }); }
-function updEntry(i, k, v) {
-  if (k==='qty') { const max=curData[i].originalQty||0; if (Number(v)>max) { toast(`Máximo: ${max}`,'error'); v=max; } }
-  if (k==='ubicacion') v=v.toUpperCase();
-  curData[i][k]=v; if(k==='qty') calcEntradas();
-}
-function calcEntradas() {
-  let s=0;
-  document.querySelectorAll('.item-check:checked').forEach(c => { const r=curData[c.dataset.i]; s+=(Number(r.qty)||0)*(Number(r.unitPrice)||0); });
-  document.getElementById('subtotal').textContent=`$${s.toFixed(2)}`;
-  document.getElementById('total').textContent=`$${(s*1.16).toFixed(2)}`;
-}
-function triggerCamera(i) { if (!document.getElementById('facturaInput').value) return toast('Ingrese Factura primero','error'); activePhotoIndex=i; document.getElementById('cameraInput').click(); }
+function updEntry(i, k, v) { if(k==='qty'){const max=curData[i].originalQty||0;if(Number(v)>max){toast(`Máximo: ${max}`,'error');v=max;}} if(k==='ubicacion') v=v.toUpperCase(); curData[i][k]=v; if(k==='qty') calcEntradas(); }
+function calcEntradas() { let s=0; document.querySelectorAll('.item-check:checked').forEach(c=>{const r=curData[c.dataset.i];s+=(Number(r.qty)||0)*(Number(r.unitPrice)||0);}); document.getElementById('subtotal').textContent=`$${s.toFixed(2)}`; document.getElementById('total').textContent=`$${(s*1.16).toFixed(2)}`; }
 
+function triggerCamera(i) { if (!document.getElementById('facturaInput').value) return toast('Ingrese Factura primero','error'); activePhotoIndex = i; document.getElementById('cameraInput').click(); }
+
+// ── Captura + compresión robusta (funciona en móvil y escritorio) ──────────────
 function _compressAndCallback(file, cb) {
   const reader = new FileReader();
   reader.onload = function(ev) {
     const b64 = ev.target.result;
     const img = new Image(); img.src = b64;
     img.onload = function() {
-      const MAX=800; let w=img.width,h=img.height;
-      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
-      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-      cv.getContext('2d').drawImage(img,0,0,w,h);
-      let compressed=cv.toDataURL('image/jpeg',0.45);
-      if(Math.round(compressed.length*0.75/1024)>600) compressed=cv.toDataURL('image/jpeg',0.3);
-      cb(compressed, Math.round(compressed.length*0.75/1024));
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h*MAX/w); w = MAX; } else { w = Math.round(w*MAX/h); h = MAX; } }
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      // Intentar con quality 0.45 primero, si es muy grande bajar a 0.3
+      let compressed = cv.toDataURL('image/jpeg', 0.45);
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      if (kb > 600) compressed = cv.toDataURL('image/jpeg', 0.3);
+      cb(compressed, Math.round(compressed.length * 0.75 / 1024));
     };
-    img.onerror=()=>cb(b64,0);
+    img.onerror = () => cb(b64, 0);
   };
-  reader.onerror=()=>toast('Error leyendo imagen','error');
+  reader.onerror = () => toast('Error leyendo imagen','error');
   reader.readAsDataURL(file);
 }
+
 function handleCameraCapture(e) {
-  const f=e.target.files[0]; if(!f) return;
-  _compressAndCallback(f,(compressed,kb)=>{stagedPhotos[activePhotoIndex]=compressed;document.getElementById(`btnCam-${activePhotoIndex}`)?.classList.add('active');toast(`Foto capturada (~${kb}KB)`);});
-  e.target.value='';
+  const f = e.target.files[0]; if (!f) return;
+  _compressAndCallback(f, (compressed, kb) => {
+    stagedPhotos[activePhotoIndex] = compressed;
+    document.getElementById(`btnCam-${activePhotoIndex}`)?.classList.add('active');
+    toast(`Foto capturada (~${kb}KB)`);
+  });
+  e.target.value = '';
 }
+
 function handleCameraEditCapture(e) {
-  const f=e.target.files[0]; if(!f) return;
-  _compressAndCallback(f,(compressed)=>{editState.photoBase64=compressed;document.getElementById('editPhotoContainer').innerHTML=`<img src="${compressed}" style="width:100%;height:100%;object-fit:cover;">`;toast('Foto lista');});
-  e.target.value='';
+  const f = e.target.files[0]; if (!f) return;
+  _compressAndCallback(f, (compressed) => {
+    editState.photoBase64 = compressed;
+    document.getElementById('editPhotoContainer').innerHTML = `<img src="${compressed}" style="width:100%;height:100%;object-fit:cover;">`;
+    toast('Foto lista');
+  });
+  e.target.value = '';
 }
 
 function getSel() {
-  const idxs=Array.from(document.querySelectorAll('.item-check:checked')).map(c=>c.dataset.i);
-  if(!idxs.length) return null;
-  const common={factura:document.getElementById('facturaInput').value.toUpperCase(),fechaFactura:document.getElementById('fechaFacturaInput').value,gateEntry:document.getElementById('gateEntryInput').value.toUpperCase(),gin:document.getElementById('ginInput').value.toUpperCase(),elaboradoPor:document.getElementById('elaboradoPorSelect').value,comentarios:document.getElementById('comentarios').value.toUpperCase()};
-  if(!common.factura||!common.gin||!common.elaboradoPor){toast('Faltan: Factura, GIN o Elaborado por','error');return null;}
-  return idxs.map(i=>({...curData[i],...common,ubicacion:(curData[i].ubicacion||'').toUpperCase(),photoBase64:stagedPhotos[i]||null}));
-}
-function saveEntrada() {
-  const rows=getSel(); if(!rows) return;
-  loadBtn('btnSave',true);
-  api('passDataToSheet',{selectedRows:rows,poNumber:curPO,buyer:curBuyer,supplier:curSupplier}).then(res=>{
-    loadBtn('btnSave',false); toast(res.message);
-    cacheClear(CACHE_KEYS.ENTRADAS); setCacheStatus('Entradas','stale');
-    if(res.dataToPrint?.length) generatePDFInternal(res.dataToPrint,true,'btnSave');
-    else resetEntradas();
-  }).catch(e=>{loadBtn('btnSave',false);toast(e.message,'error');});
-}
-function printLabels() { const rows=getSel(); if(!rows) return; const toPrint=rows.filter(r=>r.imprimir!=='NO'); if(!toPrint.length) return toast('Sin items para imprimir','error'); generatePDFInternal(toPrint,false,'btnPrint'); }
-function resetEntradas() {
-  ['poInput','facturaInput','gateEntryInput','ginInput','buyerInput','supplierInput','comentarios'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('elaboradoPorSelect').innerHTML='';
-  document.getElementById('itemsList').innerHTML='';
-  document.getElementById('recordCount').textContent='0 items';
-  document.getElementById('subtotal').textContent='$0.00';
-  document.getElementById('total').textContent='$0.00';
-  document.getElementById('currencyDisp').textContent='MXN';
-  curData=[]; curPO=''; curBuyer=''; curSupplier=''; stagedPhotos={};
-  document.getElementById('btnPrint').disabled=true;
+  const idxs = Array.from(document.querySelectorAll('.item-check:checked')).map(c => c.dataset.i);
+  if (!idxs.length) return null;
+  const common = { factura:document.getElementById('facturaInput').value.toUpperCase(), fechaFactura:document.getElementById('fechaFacturaInput').value, gateEntry:document.getElementById('gateEntryInput').value.toUpperCase(), gin:document.getElementById('ginInput').value.toUpperCase(), elaboradoPor:document.getElementById('elaboradoPorSelect').value, comentarios:document.getElementById('comentarios').value.toUpperCase() };
+  if (!common.factura || !common.gin || !common.elaboradoPor) { toast('Faltan: Factura, GIN o Elaborado por','error'); return null; }
+  return idxs.map(i => ({ ...curData[i], ...common, ubicacion:(curData[i].ubicacion||'').toUpperCase(), photoBase64:stagedPhotos[i]||null }));
 }
 
-// ══════════════════════════════════════════════════════════
-//  PDF LOCAL
-// ══════════════════════════════════════════════════════════
-function wrapTextCanvas(ctx, text, maxPxWidth, maxLines) {
-  if(!text) return [''];
-  const words=text.split(' '); const lines=[]; let cur='';
-  for(const w of words){const test=cur?cur+' '+w:w;if(ctx.measureText(test).width>maxPxWidth&&cur){lines.push(cur);cur=w;if(lines.length>=maxLines)break;}else cur=test;}
-  if(cur&&lines.length<maxLines) lines.push(cur);
-  return lines.length?lines:[''];
+function saveEntrada() {
+  const rows = getSel(); if (!rows) return;
+  loadBtn('btnSave', true);
+  api('passDataToSheet', { selectedRows:rows, poNumber:curPO, buyer:curBuyer, supplier:curSupplier }).then(res => {
+    loadBtn('btnSave', false);
+    toast(res.message);
+    // Invalidar caché de entradas para que se actualice en próxima carga
+    cacheClear(CACHE_KEYS.ENTRADAS);
+    setCacheStatus('Entradas', 'stale');
+    if (res.dataToPrint?.length) generatePDFInternal(res.dataToPrint, true, 'btnSave');
+    else resetEntradas();
+  }).catch(e => { loadBtn('btnSave', false); toast(e.message,'error'); });
 }
-function truncLines(text,maxChars,maxLines){if(!text)return[''];const words=text.split(' ');const lines=[];let cur='';for(const w of words){const test=cur?cur+' '+w:w;if(test.length>maxChars&&cur){lines.push(cur);cur=w;if(lines.length>=maxLines)break;}else cur=test;}if(cur&&lines.length<maxLines)lines.push(cur);return lines.length?lines:[''];}
+
+function printLabels() { const rows = getSel(); if (!rows) return; const toPrint = rows.filter(r => r.imprimir !== 'NO'); if (!toPrint.length) return toast('Sin items para imprimir','error'); generatePDFInternal(toPrint, false, 'btnPrint'); }
+
+function resetEntradas() { ['poInput','facturaInput','gateEntryInput','ginInput','buyerInput','supplierInput','comentarios'].forEach(id=>document.getElementById(id).value=''); document.getElementById('elaboradoPorSelect').innerHTML=''; document.getElementById('itemsList').innerHTML=''; document.getElementById('recordCount').textContent='0 items'; document.getElementById('subtotal').textContent='$0.00'; document.getElementById('total').textContent='$0.00'; document.getElementById('currencyDisp').textContent='MXN'; curData=[]; curPO=''; curBuyer=''; curSupplier=''; stagedPhotos={}; document.getElementById('btnPrint').disabled=true; }
+
+// ══════════════════════════════════════════════════════════
+//  PDF LOCAL — jsPDF + QRCode
+// ══════════════════════════════════════════════════════════
+// Parte el texto en líneas según el ANCHO REAL en píxeles del canvas
+// — no corta palabras, baja de renglón naturalmente
+// — la última línea simplemente queda donde quedó (sin cortar a mitad)
+// maxLines: número máximo de renglones
+function wrapTextCanvas(ctx, text, maxPxWidth, maxLines) {
+  if (!text) return [''];
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > maxPxWidth && cur) {
+      lines.push(cur);
+      cur = w;
+      if (lines.length >= maxLines) break;
+    } else {
+      cur = test;
+    }
+  }
+  // Agregar última línea si no se alcanzó el límite
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+// Mantener truncLines para compatibilidad con otros usos
+function truncLines(text, maxChars, maxLines) {
+  if (!text) return [''];
+  const words = text.split(' '); const lines = []; let cur = '';
+  for (const w of words) {
+    const test = cur ? cur+' '+w : w;
+    if (test.length > maxChars && cur) { lines.push(cur); cur = w; if (lines.length >= maxLines) break; }
+    else cur = test;
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines.length ? lines : [''];
+}
 
 function generateQRDataURL(text) {
-  return new Promise(resolve=>{
-    const div=document.createElement('div');div.style.cssText='position:fixed;left:-9999px;top:-9999px;width:200px;height:200px';document.body.appendChild(div);
-    try{new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});setTimeout(()=>{const img=div.querySelector('canvas');resolve(img?img.toDataURL('image/png'):null);document.body.removeChild(div);},120);}
-    catch(e){document.body.removeChild(div);resolve(null);}
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:200px;height:200px';
+    document.body.appendChild(div);
+    try {
+      new QRCode(div, { text, width:200, height:200, correctLevel:QRCode.CorrectLevel.M });
+      setTimeout(() => {
+        const img = div.querySelector('canvas');
+        resolve(img ? img.toDataURL('image/png') : null);
+        document.body.removeChild(div);
+      }, 120);
+    } catch(e) { document.body.removeChild(div); resolve(null); }
   });
 }
-function generateStockQRDataURL(code){return generateQRDataURL(GAS_URL+'?stock='+encodeURIComponent(code));}
-function generateBarcodeImage(code,targetW,targetH){
-  return new Promise(resolve=>{
-    try{const cv=document.createElement('canvas');cv.style.cssText='position:fixed;left:-9999px;top:-9999px;';document.body.appendChild(cv);
-    JsBarcode(cv,code,{format:'CODE128',width:2.5,height:Math.round(targetH*0.85),displayValue:false,margin:2,background:'#ffffff',lineColor:'#000000'});
-    setTimeout(()=>{try{const out=document.createElement('canvas');out.width=targetW;out.height=Math.round(cv.height*(targetW/cv.width));out.getContext('2d').drawImage(cv,0,0,out.width,out.height);document.body.removeChild(cv);const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=out.toDataURL('image/png');}catch(e2){try{document.body.removeChild(cv);}catch(e3){}resolve(null);}},100);}
-    catch(e){resolve(null);}
+// QR de inventario - apunta a consulta de stock
+function generateStockQRDataURL(code) {
+  return generateQRDataURL(GAS_URL + '?stock=' + encodeURIComponent(code));
+}
+// Codigo de barras Code128 — devuelve HTMLImageElement ya cargado (no dataURL)
+// displayValue:false — sin texto debajo, el código ya aparece arriba en la etiqueta
+function generateBarcodeImage(code, targetW, targetH) {
+  return new Promise(resolve => {
+    try {
+      const cv = document.createElement('canvas');
+      cv.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+      document.body.appendChild(cv);
+      JsBarcode(cv, code, {
+        format:       'CODE128',
+        width:        2.5,
+        height:       Math.round(targetH * 0.85),
+        displayValue: false,
+        margin:       2,
+        background:   '#ffffff',
+        lineColor:    '#000000'
+      });
+      setTimeout(() => {
+        try {
+          // Escalar al ancho exacto deseado manteniendo proporciones
+          const out = document.createElement('canvas');
+          out.width  = targetW;
+          out.height = Math.round(cv.height * (targetW / cv.width));
+          out.getContext('2d').drawImage(cv, 0, 0, out.width, out.height);
+          document.body.removeChild(cv);
+          // Pre-cargar como Image para que drawImage funcione síncrono en canvas
+          const img = new Image();
+          img.onload  = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = out.toDataURL('image/png');
+        } catch(e2) {
+          try { document.body.removeChild(cv); } catch(e3) {}
+          resolve(null);
+        }
+      }, 100);
+    } catch(e) { resolve(null); }
   });
 }
-function fitFs(ctx,text,maxW,maxSize,bold){let fs=maxSize;while(fs>=5){ctx.font=`${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;if(ctx.measureText(text).width<=maxW)return fs;fs-=0.5;}return 5;}
-function fmtLabelDate(raw){const MESES=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];if(!raw)return new Date().toLocaleDateString('es-MX');let d;if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){const[y,m,dd]=raw.split('-');d=new Date(+y,+m-1,+dd);}else d=new Date(raw);if(isNaN(d))return raw;return`${String(d.getDate()).padStart(2,'0')}/${MESES[d.getMonth()]}/${d.getFullYear()}`;}
 
-function drawLabel(ctx,x,y,w,h,item,qrImg,logoImg,descMaxChars,stockQrImg,barcodeImg){
-  ctx.save();ctx.fillStyle='#fff';ctx.fillRect(x,y,w,h);
-  const pad=w*0.035,iw=w-pad*2,cx=x+w/2;
-  const zh={hdr:0.16,po:0.10,rcv:0.10,usr:0.10,loc:0.10,cod:0.14,bot:0.30};
-  let zy=y;const zs={};
-  for(const k of['hdr','po','rcv','usr','loc','cod','bot']){zs[k]=zy;zy+=zh[k]*h;}
-  const hh=zh.hdr*h,titleStr='FLEX AMERICAS';
-  const titleFs=fitFs(ctx,titleStr,iw*0.68,hh*0.68,true);
+function fitFs(ctx, text, maxW, maxSize, bold) {
+  let fs = maxSize;
+  while (fs >= 5) { ctx.font = `${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`; if (ctx.measureText(text).width <= maxW) return fs; fs -= 0.5; }
+  return 5;
+}
+
+function fmtLabelDate(raw) {
+  const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  if (!raw) return new Date().toLocaleDateString('es-MX');
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) { const [y,m,dd]=raw.split('-'); d=new Date(+y,+m-1,+dd); }
+  else d = new Date(raw);
+  if (isNaN(d)) return raw;
+  return `${String(d.getDate()).padStart(2,'0')}/${MESES[d.getMonth()]}/${d.getFullYear()}`;
+}
+
+function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrImg, barcodeImg) {
+  ctx.save();
+  ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+  const pad = w*0.035, iw = w-pad*2, cx = x+w/2;
+
+  // ── Zonas verticales: hdr=16% po=10% rcv=10% usr=10% loc=10% cod=14% desc+bc=30%
+  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.14, bot:0.30 };
+  let zy = y; const zs = {};
+  for (const k of ['hdr','po','rcv','usr','loc','cod','bot']) { zs[k]=zy; zy+=zh[k]*h; }
+
+  // ── HEADER ───────────────────────────────────────────────
+  const hh = zh.hdr*h, titleStr = 'FLEX AMERICAS';
+  const titleFs = fitFs(ctx, titleStr, iw*0.68, hh*0.68, true);
+  ctx.font = `bold ${titleFs}px Helvetica,Arial,sans-serif`;
+  const titleW = ctx.measureText(titleStr).width;
+  const logoSz = Math.min(hh*0.80, titleFs*1.05), gap = logoSz*0.28;
+  const blockW = logoSz+gap+titleW, hMidY = zs.hdr+hh/2;
+  if (logoImg) { try { ctx.drawImage(logoImg, cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz); } catch(e){} }
+  else {
+    ctx.fillStyle='#1e3c72'; ctx.fillRect(cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz);
+    ctx.fillStyle='#fff'; const lfs=Math.max(logoSz*0.3,6);
+    ctx.font=`bold ${lfs}px Helvetica,Arial,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('FLEX',cx-blockW/2+logoSz/2,hMidY); ctx.fillStyle='#000';
+  }
+  ctx.fillStyle='#000'; ctx.textAlign='left'; ctx.textBaseline='middle';
   ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;
-  const titleW=ctx.measureText(titleStr).width;
-  const logoSz=Math.min(hh*0.80,titleFs*1.05),gap=logoSz*0.28;
-  const blockW=logoSz+gap+titleW,hMidY=zs.hdr+hh/2;
-  if(logoImg){try{ctx.drawImage(logoImg,cx-blockW/2,hMidY-logoSz/2,logoSz,logoSz);}catch(e){}}
-  else{ctx.fillStyle='#1e3c72';ctx.fillRect(cx-blockW/2,hMidY-logoSz/2,logoSz,logoSz);ctx.fillStyle='#fff';const lfs=Math.max(logoSz*0.3,6);ctx.font=`bold ${lfs}px Helvetica,Arial,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('FLEX',cx-blockW/2+logoSz/2,hMidY);ctx.fillStyle='#000';}
-  ctx.fillStyle='#000';ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`bold ${titleFs}px Helvetica,Arial,sans-serif`;ctx.fillText(titleStr,cx-blockW/2+logoSz+gap,hMidY);
-  const qrZoneH=(y+h)-zs.po-pad*0.5,qrZoneW=w*0.26,qrSz=Math.min(qrZoneW-pad,qrZoneH),qrX=x+(qrZoneW-qrSz)/2,qrY=zs.po+(qrZoneH-qrSz)/2;
-  const textStartX=x+qrZoneW+pad*0.3,textAvailW=(x+w-pad)-textStartX,textCx=textStartX+textAvailW/2;
-  function row(text,zone,bold2,underline){const rh=zh[zone]*h;const fs=fitFs(ctx,text,textAvailW,rh*0.72,bold2);ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';const ry=zs[zone]+rh/2;ctx.fillText(text,textCx,ry);if(underline){const tw=ctx.measureText(text).width;ctx.beginPath();ctx.moveTo(textCx-tw/2,ry+fs*0.55);ctx.lineTo(textCx+tw/2,ry+fs*0.55);ctx.lineWidth=0.6;ctx.stroke();}}
-  row(`PO:${item.po||curPO||''}       GIN:${item.gin||''}`,'po',false,false);
-  row(`RECEIVED ON: ${fmtLabelDate(item.fechaFactura||item.date||'')}`,'rcv',false,false);
-  row(`USER: ${item.user||item.elaboradoPor||currentUser?.name||''}`,'usr',false,false);
-  row(`LOCATION: ${item.ubicacion||item.location||''}`,'loc',true,true);
-  const codRh=zh.cod*h,codFs=fitFs(ctx,item.code||'',textAvailW,codRh*0.80,true);
-  ctx.font=`bold ${codFs}px Helvetica,Arial,sans-serif`;ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(item.code||'',textCx,zs.cod+codRh/2);
-  const botY=zs.bot,botH=zh.bot*h,bcH=botH*0.35,bcW=textAvailW,bcX=textStartX,bcY=botY+botH*0.03;
-  if(barcodeImg){try{ctx.drawImage(barcodeImg,bcX,bcY,bcW,bcH);}catch(e){}}
-  const descY0=bcY+bcH+botH*0.04,descH=(y+h)-descY0-pad*0.2,lineH=descH/2;
-  let dfs=Math.max(lineH*0.80,8);ctx.font=`${dfs}px Helvetica,Arial,sans-serif`;
-  const descLines=wrapTextCanvas(ctx,item.description||'',textAvailW,2),descCx=textStartX+textAvailW/2,dlh=dfs*1.20,totalDH=descLines.length*dlh;
-  let dy=descY0+(descH-totalDH)/2+dfs*0.75;
-  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';
-  descLines.forEach(l=>{ctx.save();ctx.beginPath();ctx.rect(textStartX,dy-dfs*1.1,textAvailW,dfs*1.4);ctx.clip();ctx.fillText(l,descCx,dy);ctx.restore();dy+=dlh;});
-  if(stockQrImg){try{ctx.drawImage(stockQrImg,qrX,qrY,qrSz,qrSz);}catch(e){}}
+  ctx.fillText(titleStr, cx-blockW/2+logoSz+gap, hMidY);
+
+  // ── FILAS DE INFO ─────────────────────────────────────────
+  // QR izquierdo: arranca desde la zona PO hasta el fondo
+  // El texto de las filas usa el ancho RESTANTE después del QR
+  // Calculamos el QR primero para saber el ancho disponible para el texto
+  const qrZoneH = (y + h) - zs.po - pad*0.5;   // alto desde PO hasta fondo
+  const qrZoneW = w * 0.26;                      // 26% del ancho para QR
+  // El QR real depende de lo que quepa cuadrado en esa zona
+  const qrSz    = Math.min(qrZoneW - pad, qrZoneH);
+  const qrX     = x + (qrZoneW - qrSz) / 2;
+  const qrY     = zs.po + (qrZoneH - qrSz) / 2; // centrado verticalmente
+
+  // Ancho disponible para texto de filas (evitar solapar con QR)
+  const textStartX = x + qrZoneW + pad * 0.3;
+  const textAvailW  = (x + w - pad) - textStartX;
+  const textCx     = textStartX + textAvailW / 2;
+
+  function row(text, zone, bold2, underline) {
+    const rh = zh[zone]*h;
+    const fs = fitFs(ctx, text, textAvailW, rh*0.72, bold2);
+    ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
+    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const ry = zs[zone]+rh/2;
+    ctx.fillText(text, textCx, ry);
+    if (underline) {
+      const tw = ctx.measureText(text).width;
+      ctx.beginPath(); ctx.moveTo(textCx-tw/2,ry+fs*0.55); ctx.lineTo(textCx+tw/2,ry+fs*0.55);
+      ctx.lineWidth=0.6; ctx.stroke();
+    }
+  }
+  row(`PO:${item.po||curPO||''}       GIN:${item.gin||''}`, 'po', false, false);
+  row(`RECEIVED ON: ${fmtLabelDate(item.fechaFactura||item.date||'')}`, 'rcv', false, false);
+  row(`USER: ${item.user||item.elaboradoPor||currentUser?.name||''}`, 'usr', false, false);
+  row(`LOCATION: ${item.ubicacion||item.location||''}`, 'loc', true, true);
+
+  // ── CÓDIGO — centrado en ancho de texto, tamaño grande ───
+  const codRh = zh.cod*h;
+  const codFs = fitFs(ctx, item.code||'', textAvailW, codRh*0.80, true);
+  ctx.font=`bold ${codFs}px Helvetica,Arial,sans-serif`;
+  ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(item.code||'', textCx, zs.cod+codRh/2);
+
+  // ── ZONA BOT: barcode + descripción ──────────────────────
+  const botY = zs.bot;
+  const botH = zh.bot * h;
+
+  // Barcode: justo debajo del código, ancho = textAvailW, alto = 35% de botH
+  const bcH    = botH * 0.35;
+  const bcW    = textAvailW;
+  const bcX    = textStartX;
+  const bcY    = botY + botH * 0.03;
+
+  if (barcodeImg) {
+    try { ctx.drawImage(barcodeImg, bcX, bcY, bcW, bcH); } catch(e){} 
+  }
+
+  // Descripción: debajo del barcode, letra grande, 2 líneas máx
+  // Mide en px reales para bajar de renglón correctamente
+  const descY0  = bcY + bcH + botH * 0.04;
+  const descH   = (y + h) - descY0 - pad * 0.2;
+  const lineH   = descH / 2;               // 2 renglones que llenan el espacio
+  let dfs = lineH * 0.80;
+  dfs = Math.max(dfs, 8);
+  ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
+
+  // wrapTextCanvas parte donde no quepa (px reales), máx 2 líneas
+  const descLines = wrapTextCanvas(ctx, item.description||'', textAvailW, 2);
+  const descCx    = textStartX + textAvailW / 2;
+  const dlh       = dfs * 1.20;
+  const totalDH   = descLines.length * dlh;
+  let dy = descY0 + (descH - totalDH)/2 + dfs*0.75;
+
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
+  descLines.forEach(l => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(textStartX, dy - dfs*1.1, textAvailW, dfs*1.4);
+    ctx.clip();
+    ctx.fillText(l, descCx, dy);
+    ctx.restore();
+    dy += dlh;
+  });
+
+  // ── QR STOCK — izquierda, centrado verticalmente desde PO ─
+  if (stockQrImg) {
+    try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e){} 
+  }
+
   ctx.restore();
 }
 
-let _logoImgCache=null;
-async function getLogoImg(){if(_logoImgCache)return _logoImgCache;try{const res=await api('getLogo');if(!res.success||!res.dataUrl)return null;const li=new Image();li.src=res.dataUrl;await new Promise((resolve,reject)=>{li.onload=resolve;li.onerror=reject;});_logoImgCache=li;return li;}catch(e){return null;}}
-
-async function generatePDFInternal(data,shouldReset,btnId){
-  loadBtn(btnId,true);
-  try{
-    const{jsPDF}=window.jspdf;
-    const CHAR_LIMITS={SENCILLA:80,DOBLE:40,TRIPLE:30};
-    const grupos={SENCILLA:[],DOBLE:[],TRIPLE:[]};
-    data.forEach(r=>{const t=(r.imprimir||'SENCILLA').toUpperCase();if(grupos[t]){const pages=Math.max(1,parseInt(r.copies||1));for(let i=0;i<pages;i++)grupos[t].push({...r});}});
-    const logoImg=await getLogoImg();const pdfFiles={};const MG=8;
-    for(const tipo of['SENCILLA','DOBLE','TRIPLE']){
-      const items=grupos[tipo];if(!items.length)continue;
-      const maxChars=CHAR_LIMITS[tipo];let doc,PW,PH;
-      if(tipo==='SENCILLA'){doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});PW=279;PH=216;}
-      else{doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});PW=216;PH=279;}
-      const DPI=3.78,slotsPerPage=tipo==='SENCILLA'?1:tipo==='DOBLE'?2:3,gapMM=tipo==='TRIPLE'?3:4;
-      const labelH=(PH-MG*2-(slotsPerPage-1)*gapMM)/slotsPerPage,labelW=PW-MG*2;
-      for(let idx=0;idx<items.length;idx++){
-        if(idx>0)doc.addPage();
-        const it=items[idx];
-        const cv=document.createElement('canvas');cv.width=Math.round(PW*DPI);cv.height=Math.round(PH*DPI);
-        const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
-        const stockQrDataURL=it.code?await generateStockQRDataURL(it.code):null;
-        const stockQrImg=stockQrDataURL?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=stockQrDataURL;}):null;
-        const bcTargetW=Math.round(labelW*DPI*0.70),bcTargetH=Math.round(labelH*DPI*0.22);
-        const barcodeImg=it.code?await generateBarcodeImage(it.code,bcTargetW,bcTargetH):null;
-        for(let s=0;s<slotsPerPage;s++){const lx=MG*DPI,ly=(MG+(s*(labelH+gapMM)))*DPI;drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeImg);}
-        const imgData=cv.toDataURL('image/jpeg',0.92);doc.addImage(imgData,'JPEG',0,0,PW,PH);
-      }
-      pdfFiles[tipo]=doc.output('datauristring').split(',')[1];
-    }
-    loadBtn(btnId,false);
-    const box=document.getElementById('pdfLinksContainer');box.innerHTML='';
-    Object.keys(pdfFiles).forEach(k=>{box.innerHTML+=`<button class="btn btn-outline-danger btn-lg text-start w-100 mb-2" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;});
-    document.getElementById('modalPdf').classList.add('show');
-    if(shouldReset)resetEntradas();
-  }catch(err){loadBtn(btnId,false);toast('Error PDF: '+err.message,'error');console.error(err);}
+let _logoImgCache = null;
+async function getLogoImg() {
+  if (_logoImgCache) return _logoImgCache;
+  try {
+    const res = await api('getLogo');
+    if (!res.success || !res.dataUrl) return null;
+    const li = new Image(); li.src = res.dataUrl;
+    await new Promise((resolve,reject) => { li.onload=resolve; li.onerror=reject; });
+    _logoImgCache = li; return li;
+  } catch(e) { console.warn('Logo load failed:', e); return null; }
 }
-function openBase64PDF(b64){const bytes=atob(b64),arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})),'_blank');}
+
+async function generatePDFInternal(data, shouldReset, btnId) {
+  loadBtn(btnId, true);
+  try {
+    const { jsPDF } = window.jspdf;
+    const CHAR_LIMITS = { SENCILLA:80, DOBLE:40, TRIPLE:30 };
+    const grupos = { SENCILLA:[], DOBLE:[], TRIPLE:[] };
+    data.forEach(r => {
+      const t = (r.imprimir||'SENCILLA').toUpperCase();
+      if (grupos[t]) { const pages = Math.max(1,parseInt(r.copies||1)); for (let i=0;i<pages;i++) grupos[t].push({...r}); }
+    });
+    const logoImg = await getLogoImg();
+    const pdfFiles = {};
+    const MG = 8;
+    for (const tipo of ['SENCILLA','DOBLE','TRIPLE']) {
+      const items = grupos[tipo]; if (!items.length) continue;
+      const maxChars = CHAR_LIMITS[tipo];
+      let doc, PW, PH;
+      if (tipo === 'SENCILLA') { doc = new jsPDF({orientation:'landscape',unit:'mm',format:'letter'}); PW=279; PH=216; }
+      else { doc = new jsPDF({orientation:'portrait',unit:'mm',format:'letter'}); PW=216; PH=279; }
+      const DPI = 3.78;
+      const slotsPerPage = tipo==='SENCILLA'?1:tipo==='DOBLE'?2:3;
+      const gapMM = tipo==='TRIPLE'?3:4;
+      const labelH = (PH-MG*2-(slotsPerPage-1)*gapMM)/slotsPerPage;
+      const labelW = PW-MG*2;
+      for (let idx=0;idx<items.length;idx++) {
+        if (idx > 0) doc.addPage();
+        const it = items[idx];
+        const cv = document.createElement('canvas'); cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+        // QR stock (apunta a ?stock=CODE) + barcode Code128
+        const stockQrDataURL = it.code ? await generateStockQRDataURL(it.code) : null;
+        const stockQrImg = stockQrDataURL ? await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=stockQrDataURL;}) : null;
+        // Barcode: ancho = 72% del ancho de etiqueta en px, alto proporcional a 40% del alto
+        // Barcode: Image precargada para drawImage síncrono
+        const bcTargetW = Math.round(labelW * DPI * 0.70);
+        const bcTargetH = Math.round(labelH * DPI * 0.22);
+        const barcodeImg = it.code ? await generateBarcodeImage(it.code, bcTargetW, bcTargetH) : null;
+        for (let s=0;s<slotsPerPage;s++) {
+          const lx=MG*DPI, ly=(MG+(s*(labelH+gapMM)))*DPI;
+          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeImg);
+        }
+        const imgData = cv.toDataURL('image/jpeg',0.92);
+        doc.addImage(imgData,'JPEG',0,0,PW,PH);
+      }
+      pdfFiles[tipo] = doc.output('datauristring').split(',')[1];
+    }
+    loadBtn(btnId, false);
+    const box = document.getElementById('pdfLinksContainer'); box.innerHTML='';
+    Object.keys(pdfFiles).forEach(k => {
+      box.innerHTML += `<button class="btn btn-outline-danger btn-lg text-start w-100 mb-2" onclick="openBase64PDF('${pdfFiles[k]}')"><i class="fas fa-file-pdf me-2"></i>Etiquetas ${k}</button>`;
+    });
+    document.getElementById('modalPdf').classList.add('show');
+    if (shouldReset) resetEntradas();
+  } catch(err) { loadBtn(btnId, false); toast('Error PDF: '+err.message,'error'); console.error(err); }
+}
+
+function openBase64PDF(b64) { const bytes=atob(b64),arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})),'_blank'); }
 
 // ══════════════════════════════════════════════════════════
-//  MÓDULO: CONSULTA
+//  MÓDULO: CONSULTA  (búsqueda local primero → servidor si no hay caché)
 // ══════════════════════════════════════════════════════════
 function runConsulta() {
-  const col=document.getElementById('consultaColumna').value;
-  const term=document.getElementById('consultaInput').value.trim();
-  if(!col)  return toast('Selecciona una columna','error');
-  if(!term) return toast('Ingresa un valor','error');
-  const localResult=buscarEnCacheEntradas(term,col);
-  if(localResult){
-    renderConsulta(localResult.headers,localResult.rows);
+  const col   = document.getElementById('consultaColumna').value;
+  const term  = document.getElementById('consultaInput').value.trim();
+  if (!col)  return toast('Selecciona una columna','error');
+  if (!term) return toast('Ingresa un valor','error');
+
+  // Intentar caché local primero
+  const localResult = buscarEnCacheEntradas(term, col);
+  if (localResult) {
+    renderConsulta(localResult.headers, localResult.rows);
     toast(`${localResult.rows.length} resultado(s) — caché local`,'info');
-    _consultaFromServer(term,col,true);
+    // Actualizar en background también del servidor para mostrar datos más frescos
+    _consultaFromServer(term, col, true);
     return;
   }
-  _consultaFromServer(term,col,false);
+
+  // Sin caché: ir directo al servidor
+  _consultaFromServer(term, col, false);
 }
-function _consultaFromServer(term,col,background){
-  if(!background) loadBtn('btnBuscarConsulta',true);
-  api('consultarRegistros',{termino:term,colIndex:col}).then(res=>{
-    if(!background) loadBtn('btnBuscarConsulta',false);
-    if(!res.success){if(!background)toast(res.error,'error');return;}
-    if(res.elaboradoPorOpciones) elaboradoPorOpciones=res.elaboradoPorOpciones;
-    renderConsulta(res.headers,res.items);
-    if(!background)toast(`${res.items.length} resultado(s)`);
-  }).catch(e=>{if(!background){loadBtn('btnBuscarConsulta',false);toast(e.message,'error');}});
+
+function _consultaFromServer(term, col, background) {
+  if (!background) loadBtn('btnBuscarConsulta', true);
+  api('consultarRegistros', { termino:term, colIndex:col }).then(res => {
+    if (!background) loadBtn('btnBuscarConsulta', false);
+    if (!res.success) { if (!background) toast(res.error,'error'); return; }
+    if (res.elaboradoPorOpciones) elaboradoPorOpciones = res.elaboradoPorOpciones;
+    renderConsulta(res.headers, res.items);
+    if (!background) toast(`${res.items.length} resultado(s)`);
+  }).catch(e => { if (!background) { loadBtn('btnBuscarConsulta', false); toast(e.message,'error'); } });
 }
-function renderConsulta(headers,items){
-  consultaDataMemoria=items||[];
-  const thead=document.querySelector('#consultaTable thead'),tbody=document.querySelector('#consultaTable tbody');
-  thead.innerHTML='';tbody.innerHTML='';
-  if(headers?.length){
-    let h='<tr><th style="width:32px"><input type="checkbox" id="chkConsultaAll" onclick="consultaSelAll(this.checked)" title="Sel. todo"></th><th>#</th><th>Acciones</th>';
-    headers.forEach((hd,i)=>{h+=i===17?`<th style="display:none">${hd}</th>`:`<th>${hd}</th>`;});
-    h+='</tr>';thead.innerHTML=h;
+
+function renderConsulta(headers, items) {
+  consultaDataMemoria = items || [];
+  const thead = document.querySelector('#consultaTable thead'), tbody = document.querySelector('#consultaTable tbody');
+  thead.innerHTML=''; tbody.innerHTML='';
+  if (headers?.length) {
+    let h = '<tr><th style="width:32px"><input type="checkbox" id="chkConsultaAll" onclick="consultaSelAll(this.checked)" title="Sel. todo"></th><th>#</th><th>Acciones</th>';
+    headers.forEach((hd,i) => { h += i===17 ? `<th style="display:none">${hd}</th>` : `<th>${hd}</th>`; });
+    h += '</tr>'; thead.innerHTML = h;
   }
-  if(!items?.length){tbody.innerHTML=`<tr><td colspan="22" class="text-center text-muted py-5">Sin resultados</td></tr>`;}
-  else{
-    let html='';
-    items.forEach((row,i)=>{
-      const eid=row[18]||'';
-      html+=`<tr id="fila-cons-${i}"><td><input type="checkbox" class="consulta-chk" data-i="${i}"></td><td>${i+1}</td><td style="white-space:nowrap">
+  if (!items?.length) { tbody.innerHTML=`<tr><td colspan="22" class="text-center text-muted py-5">Sin resultados</td></tr>`; }
+  else {
+    let html = '';
+    items.forEach((row, i) => {
+      const eid = row[18] || '';
+      html += `<tr id="fila-cons-${i}"><td><input type="checkbox" class="consulta-chk" data-i="${i}"></td><td>${i+1}</td><td style="white-space:nowrap">
         <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalEdicion(${i})"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm btn-outline-danger" onclick="abrirModalBorrado(${i})" ${eid?'':'disabled'}><i class="fas fa-trash"></i></button>
       </td>`;
-      row.forEach((cell,ci)=>{html+=ci===17?`<td style="display:none">${cell}</td>`:ci===18?`<td><span class="badge-id">${cell||'—'}</span></td>`:`<td>${cell}</td>`;});
-      html+='</tr>';
+      row.forEach((cell,ci) => { html += ci===17 ? `<td style="display:none">${cell}</td>` : ci===18 ? `<td><span class="badge-id">${cell||'—'}</span></td>` : `<td>${cell}</td>`; });
+      html += `</tr>`;
     });
-    tbody.innerHTML=html;
-    if(window.gsap){const rows=document.querySelectorAll('#consultaTable tbody tr');gsap.fromTo(rows,{opacity:0,y:5},{opacity:1,y:0,duration:.15,stagger:.02,ease:'power1.out'});}
+    tbody.innerHTML = html;
+    if (window.gsap) { const rows=document.querySelectorAll('#consultaTable tbody tr'); gsap.fromTo(rows,{opacity:0,y:5},{opacity:1,y:0,duration:.15,stagger:.02,ease:'power1.out'}); }
   }
-  document.getElementById('consultaCount').textContent=`${items.length} resultados`;
+  document.getElementById('consultaCount').textContent = `${items.length} resultados`;
 }
 
-// ── Edit/Delete modal ──
-function abrirModalEdicion(rowIndex){
-  const row=consultaDataMemoria[rowIndex];if(!row)return;
-  const eid=row[18]||'';if(!eid)return toast('Registro sin ID','error');
-  editState={entryId:eid,photoBase64:null,rowIndex};
-  document.getElementById('editInfoCode').textContent=row[6]||'—';document.getElementById('editInfoPO').textContent=row[2]||'—';
-  document.getElementById('editInfoDesc').textContent=row[7]||'—';document.getElementById('editInfoQty').textContent=row[8]||'—';
-  document.getElementById('editInfoFactura').textContent=row[4]||'N/A';document.getElementById('editModalEntryId').textContent=`ID: ${eid}`;
-  document.getElementById('editGateEntry').value=row[10]||'';document.getElementById('editGin').value=row[11]||'';
-  document.getElementById('editUbicacion').value=row[14]||'';document.getElementById('editComentarios').value=row[15]||'';
-  const sel=document.getElementById('editElaboradoPor');sel.innerHTML='<option value="">Seleccione…</option>';
-  elaboradoPorOpciones.forEach(op=>sel.innerHTML+=`<option ${op===row[16]?'selected':''}>${op}</option>`);
-  if(!elaboradoPorOpciones.includes(row[16])&&row[16])sel.innerHTML+=`<option selected>${row[16]}</option>`;
+// ── Edit/Delete modal ──────────────────────────────────────
+function abrirModalEdicion(rowIndex) {
+  const row = consultaDataMemoria[rowIndex]; if (!row) return;
+  const eid = row[18]||''; if (!eid) return toast('Registro sin ID','error');
+  editState = { entryId:eid, photoBase64:null, rowIndex };
+  document.getElementById('editInfoCode').textContent=row[6]||'—'; document.getElementById('editInfoPO').textContent=row[2]||'—';
+  document.getElementById('editInfoDesc').textContent=row[7]||'—'; document.getElementById('editInfoQty').textContent=row[8]||'—';
+  document.getElementById('editInfoFactura').textContent=row[4]||'N/A'; document.getElementById('editModalEntryId').textContent=`ID: ${eid}`;
+  document.getElementById('editGateEntry').value=row[10]||''; document.getElementById('editGin').value=row[11]||'';
+  document.getElementById('editUbicacion').value=row[14]||''; document.getElementById('editComentarios').value=row[15]||'';
+  const sel=document.getElementById('editElaboradoPor'); sel.innerHTML='<option value="">Seleccione…</option>';
+  elaboradoPorOpciones.forEach(op => sel.innerHTML+=`<option ${op===row[16]?'selected':''}>${op}</option>`);
+  if (!elaboradoPorOpciones.includes(row[16]) && row[16]) sel.innerHTML+=`<option selected>${row[16]}</option>`;
   document.getElementById('editPhotoContainer').innerHTML='<i class="fas fa-camera fa-lg"></i><span>Foto</span>';
   document.getElementById('modalEdicion').classList.add('show');
 }
-function cerrarModalEdicion(){document.getElementById('modalEdicion').classList.remove('show');editState={entryId:'',photoBase64:null,rowIndex:-1};}
-function getCambiosDelModal(){return{gateEntry:document.getElementById('editGateEntry').value,gin:document.getElementById('editGin').value,ubicacion:document.getElementById('editUbicacion').value,comentarios:document.getElementById('editComentarios').value,elaboradoPor:document.getElementById('editElaboradoPor').value};}
+function cerrarModalEdicion() { document.getElementById('modalEdicion').classList.remove('show'); editState={entryId:'',photoBase64:null,rowIndex:-1}; }
+function getCambiosDelModal() { return { gateEntry:document.getElementById('editGateEntry').value, gin:document.getElementById('editGin').value, ubicacion:document.getElementById('editUbicacion').value, comentarios:document.getElementById('editComentarios').value, elaboradoPor:document.getElementById('editElaboradoPor').value }; }
 
-function guardarEdicion(){
-  if(!editState.entryId)return toast('Sin registro','error');
-  const cambios=getCambiosDelModal();loadBtn('btnGuardarEdicion',true);
-  api('actualizarRegistro',{entryId:editState.entryId,cambios,imageBase64:editState.photoBase64}).then(res=>{
+function guardarEdicion() {
+  if (!editState.entryId) return toast('Sin registro','error');
+  const cambios = getCambiosDelModal(); loadBtn('btnGuardarEdicion',true);
+  api('actualizarRegistro',{entryId:editState.entryId,cambios,imageBase64:editState.photoBase64}).then(res => {
     loadBtn('btnGuardarEdicion',false);
-    if(res.success){toast(res.message);aplicarEnMemoria(editState.rowIndex,cambios);cerrarModalEdicion();cacheClear(CACHE_KEYS.ENTRADAS);}
+    if (res.success) { toast(res.message); aplicarEnMemoria(editState.rowIndex,cambios); cerrarModalEdicion(); cacheClear(CACHE_KEYS.ENTRADAS); }
     else toast(res.error||'Error','error');
-  }).catch(e=>{loadBtn('btnGuardarEdicion',false);toast(e.message,'error');});
+  }).catch(e => { loadBtn('btnGuardarEdicion',false); toast(e.message,'error'); });
 }
-function encolarEdicion(){
-  if(!editState.entryId)return;
-  const cambios=getCambiosDelModal();const row=consultaDataMemoria[editState.rowIndex];const label=`${row[6]||row[2]} ·${editState.entryId.slice(-5)}`;
-  const idx=editQueue.findIndex(q=>q.entryId===editState.entryId);
-  if(idx>=0)editQueue[idx]={entryId:editState.entryId,rowIndex:editState.rowIndex,cambios,photoBase64:editState.photoBase64,label};
+
+function encolarEdicion() {
+  if (!editState.entryId) return;
+  const cambios = getCambiosDelModal(); const row = consultaDataMemoria[editState.rowIndex]; const label = `${row[6]||row[2]} ·${editState.entryId.slice(-5)}`;
+  const idx = editQueue.findIndex(q => q.entryId===editState.entryId);
+  if (idx >= 0) editQueue[idx] = {entryId:editState.entryId,rowIndex:editState.rowIndex,cambios,photoBase64:editState.photoBase64,label};
   else editQueue.push({entryId:editState.entryId,rowIndex:editState.rowIndex,cambios,photoBase64:editState.photoBase64,label});
-  actualizarBatchPanel();cerrarModalEdicion();toast(`En cola (${editQueue.length})`);
+  actualizarBatchPanel(); cerrarModalEdicion(); toast(`En cola (${editQueue.length})`);
 }
-function actualizarBatchPanel(){const p=document.getElementById('batchPanel'),chips=document.getElementById('pendingChips'),cnt=document.getElementById('batchCount');if(!editQueue.length){p.style.display='none';return;}p.style.display='block';cnt.textContent=`${editQueue.length} pendiente${editQueue.length>1?'s':''}`;chips.innerHTML=editQueue.map((q,i)=>`<span class="pending-chip"><i class="fas fa-clock" style="font-size:.6rem;"></i>${q.label}<span class="rm" onclick="quitarDeCola(${i})">✕</span></span>`).join('');}
-function quitarDeCola(i){editQueue.splice(i,1);actualizarBatchPanel();}
-function limpiarPendientes(){editQueue=[];actualizarBatchPanel();toast('Cola limpiada');}
-function guardarLote(){
-  if(!editQueue.length)return;
-  loadBtn('btnGuardarLote',true);let ok=0,err=0;const snap=[...editQueue];
-  function next(i){if(i>=snap.length){loadBtn('btnGuardarLote',false);toast(`✅ Lote: ${ok} OK${err?' · '+err+' err':''}`);editQueue=[];actualizarBatchPanel();cacheClear(CACHE_KEYS.ENTRADAS);setTimeout(()=>runConsulta(),1400);return;}
-    const item=snap[i];api('actualizarRegistro',{entryId:item.entryId,cambios:item.cambios,imageBase64:item.photoBase64}).then(res=>{res.success?ok++:err++;aplicarEnMemoria(item.rowIndex,item.cambios);next(i+1);}).catch(()=>{err++;next(i+1);});}
+
+function actualizarBatchPanel() { const p=document.getElementById('batchPanel'),chips=document.getElementById('pendingChips'),cnt=document.getElementById('batchCount'); if(!editQueue.length){p.style.display='none';return;} p.style.display='block'; cnt.textContent=`${editQueue.length} pendiente${editQueue.length>1?'s':''}`; chips.innerHTML=editQueue.map((q,i)=>`<span class="pending-chip"><i class="fas fa-clock" style="font-size:.6rem;"></i>${q.label}<span class="rm" onclick="quitarDeCola(${i})">✕</span></span>`).join(''); }
+function quitarDeCola(i) { editQueue.splice(i,1); actualizarBatchPanel(); }
+function limpiarPendientes() { editQueue=[]; actualizarBatchPanel(); toast('Cola limpiada'); }
+
+function guardarLote() {
+  if (!editQueue.length) return;
+  loadBtn('btnGuardarLote',true); let ok=0,err=0; const snap=[...editQueue];
+  function next(i) { if(i>=snap.length){loadBtn('btnGuardarLote',false);toast(`✅ Lote: ${ok} OK${err?' · '+err+' err':''}`);editQueue=[];actualizarBatchPanel();cacheClear(CACHE_KEYS.ENTRADAS);setTimeout(()=>runConsulta(),1400);return;}
+    const item=snap[i]; api('actualizarRegistro',{entryId:item.entryId,cambios:item.cambios,imageBase64:item.photoBase64}).then(res=>{res.success?ok++:err++;aplicarEnMemoria(item.rowIndex,item.cambios);next(i+1);}).catch(()=>{err++;next(i+1);}); }
   next(0);
 }
-function aplicarEnMemoria(rowIndex,cambios){const row=consultaDataMemoria[rowIndex];if(!row)return;if(cambios.gateEntry!==undefined)row[10]=(cambios.gateEntry||'').toUpperCase();if(cambios.gin!==undefined)row[11]=(cambios.gin||'').toUpperCase();if(cambios.ubicacion!==undefined)row[14]=(cambios.ubicacion||'').toUpperCase();if(cambios.comentarios!==undefined)row[15]=(cambios.comentarios||'').toUpperCase();if(cambios.elaboradoPor!==undefined)row[16]=cambios.elaboradoPor;}
 
-function abrirModalBorrado(rowIndex){const row=consultaDataMemoria[rowIndex];if(!row)return;const eid=row[18]||'';if(!eid)return;deleteState={entryId:eid,rowIndex};document.getElementById('deleteInfoCode').textContent=row[6]||'—';document.getElementById('deleteInfoPO').textContent=row[2]||'—';document.getElementById('deleteInfoPR').textContent=row[1]||'—';document.getElementById('deleteInfoId').textContent=eid;document.getElementById('modalConfirmDelete').classList.add('show');}
-function cerrarModalBorrado(){document.getElementById('modalConfirmDelete').classList.remove('show');deleteState={entryId:'',rowIndex:-1};}
-function confirmarBorrado(){
+function aplicarEnMemoria(rowIndex, cambios) { const row=consultaDataMemoria[rowIndex];if(!row)return; if(cambios.gateEntry!==undefined)row[10]=(cambios.gateEntry||'').toUpperCase(); if(cambios.gin!==undefined)row[11]=(cambios.gin||'').toUpperCase(); if(cambios.ubicacion!==undefined)row[14]=(cambios.ubicacion||'').toUpperCase(); if(cambios.comentarios!==undefined)row[15]=(cambios.comentarios||'').toUpperCase(); if(cambios.elaboradoPor!==undefined)row[16]=cambios.elaboradoPor; }
+
+function abrirModalBorrado(rowIndex) { const row=consultaDataMemoria[rowIndex];if(!row)return;const eid=row[18]||'';if(!eid)return; deleteState={entryId:eid,rowIndex}; document.getElementById('deleteInfoCode').textContent=row[6]||'—'; document.getElementById('deleteInfoPO').textContent=row[2]||'—'; document.getElementById('deleteInfoPR').textContent=row[1]||'—'; document.getElementById('deleteInfoId').textContent=eid; document.getElementById('modalConfirmDelete').classList.add('show'); }
+function cerrarModalBorrado() { document.getElementById('modalConfirmDelete').classList.remove('show'); deleteState={entryId:'',rowIndex:-1}; }
+function confirmarBorrado() {
   loadBtn('btnConfirmarBorrado',true);
-  api('eliminarRegistro',{entryId:deleteState.entryId}).then(res=>{
+  api('eliminarRegistro',{entryId:deleteState.entryId}).then(res => {
     loadBtn('btnConfirmarBorrado',false);
-    if(res.success){toast(res.message);document.getElementById(`fila-cons-${deleteState.rowIndex}`)?.remove();consultaDataMemoria.splice(deleteState.rowIndex,1);document.getElementById('consultaCount').textContent=`${consultaDataMemoria.length} resultados`;cerrarModalBorrado();cacheClear(CACHE_KEYS.ENTRADAS);}
+    if (res.success) { toast(res.message); document.getElementById(`fila-cons-${deleteState.rowIndex}`)?.remove(); consultaDataMemoria.splice(deleteState.rowIndex,1); document.getElementById('consultaCount').textContent=`${consultaDataMemoria.length} resultados`; cerrarModalBorrado(); cacheClear(CACHE_KEYS.ENTRADAS); }
     else toast(res.error,'error');
-  }).catch(e=>{loadBtn('btnConfirmarBorrado',false);toast(e.message,'error');});
+  }).catch(e => { loadBtn('btnConfirmarBorrado',false); toast(e.message,'error'); });
 }
 
-function consultaSelAll(estado){document.querySelectorAll('.consulta-chk').forEach(c=>c.checked=estado);const master=document.getElementById('chkConsultaAll');if(master)master.checked=estado;}
-function _consultaGetSel(){return Array.from(document.querySelectorAll('.consulta-chk:checked')).map(c=>parseInt(c.dataset.i));}
+// ── Selección masiva + reimprimir + eliminar en LOTE ─────────────────────────
+function consultaSelAll(estado) {
+  document.querySelectorAll('.consulta-chk').forEach(c => c.checked=estado);
+  const master=document.getElementById('chkConsultaAll'); if(master) master.checked=estado;
+}
+function _consultaGetSel() { return Array.from(document.querySelectorAll('.consulta-chk:checked')).map(c => parseInt(c.dataset.i)); }
 
-function consultaEliminarSel(){
-  const idxs=_consultaGetSel();
-  if(!idxs.length)return toast('Selecciona al menos 1 registro','error');
-  if(!confirm(`¿Eliminar ${idxs.length} registro(s)? Esta acción no se puede deshacer.`))return;
-  const btn=document.getElementById('btnEliminarSel');
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Eliminando…';}
-  const toDelete=idxs.map(i=>({idx:i,eid:consultaDataMemoria[i]?.[18]||''})).filter(x=>x.eid);
-  if(!toDelete.length){if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-trash me-1"></i>Eliminar sel.';}return toast('Sin IDs válidos para eliminar','error');}
-  Promise.allSettled(toDelete.map(item=>api('eliminarRegistro',{entryId:item.eid}))).then(results=>{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-trash me-1"></i>Eliminar sel.';}
-    let ok=0,err=0;
-    results.forEach((res,ri)=>{if(res.status==='fulfilled'&&res.value?.success){ok++;document.getElementById(`fila-cons-${toDelete[ri].idx}`)?.remove();}else err++;});
-    const deletedIdxSet=new Set(toDelete.filter((_,ri)=>results[ri].status==='fulfilled'&&results[ri].value?.success).map(x=>x.idx));
-    consultaDataMemoria=consultaDataMemoria.filter((_,i)=>!deletedIdxSet.has(i));
-    document.getElementById('consultaCount').textContent=`${consultaDataMemoria.length} resultados`;
+// ELIMINAR EN PARALELO — todos a la vez con Promise.all
+function consultaEliminarSel() {
+  const idxs = _consultaGetSel();
+  if (!idxs.length) return toast('Selecciona al menos 1 registro','error');
+  if (!confirm(`¿Eliminar ${idxs.length} registro(s)? Esta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('btnEliminarSel');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Eliminando…'; }
+
+  // Obtener entry IDs de todos los seleccionados
+  const toDelete = idxs.map(i => ({ idx:i, eid:consultaDataMemoria[i]?.[18]||'' })).filter(x => x.eid);
+
+  if (!toDelete.length) {
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-trash me-1"></i>Eliminar sel.'; }
+    return toast('Sin IDs válidos para eliminar','error');
+  }
+
+  // Disparar TODAS las peticiones en paralelo
+  Promise.allSettled(toDelete.map(item => api('eliminarRegistro', { entryId:item.eid }))).then(results => {
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-trash me-1"></i>Eliminar sel.'; }
+    let ok=0, err=0;
+    results.forEach((res, ri) => {
+      if (res.status==='fulfilled' && res.value?.success) {
+        ok++;
+        // Eliminar fila del DOM
+        document.getElementById(`fila-cons-${toDelete[ri].idx}`)?.remove();
+      } else { err++; }
+    });
+    // Reconstruir memoria sin los eliminados
+    const deletedIdxSet = new Set(toDelete.filter((_, ri) => results[ri].status==='fulfilled' && results[ri].value?.success).map(x => x.idx));
+    consultaDataMemoria = consultaDataMemoria.filter((_, i) => !deletedIdxSet.has(i));
+    document.getElementById('consultaCount').textContent = `${consultaDataMemoria.length} resultados`;
     cacheClear(CACHE_KEYS.ENTRADAS);
-    toast(`✅ ${ok} eliminado(s)${err?` · ${err} error(es)`:''}`);
+    toast(`✅ ${ok} eliminado(s)${err ? ` · ${err} error(es)`:''}`);
   });
 }
 
-// FIX 2: Reimprimir con selector de tipo
-function consultaImprimirSelModal() {
+// REIMPRIMIR — genera PDF local igual que en Registro
+function consultaImprimirSel() {
   const idxs = _consultaGetSel();
   if (!idxs.length) return toast('Selecciona al menos 1 registro','error');
-  document.getElementById('reimprCount').textContent = idxs.length;
-  document.getElementById('modalReimprimir').classList.add('show');
-}
-
-function ejecutarReimprimir(tipo) {
-  document.getElementById('modalReimprimir').classList.remove('show');
-  const idxs = _consultaGetSel();
-  if (!idxs.length) return;
   const items = idxs.map(i => {
     const r = consultaDataMemoria[i] || [];
     return {
@@ -1698,7 +1777,7 @@ function ejecutarReimprimir(tipo) {
       gin:         r[11]||'',
       elaboradoPor:r[16]||'',
       fechaFactura:r[0]||'',
-      imprimir:    tipo,
+      imprimir:    'SENCILLA',
       copies:      1
     };
   });
@@ -1706,48 +1785,67 @@ function ejecutarReimprimir(tipo) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  MÓDULO: INVENTARIO
+//  MÓDULO: INVENTARIO (con caché local)
 // ══════════════════════════════════════════════════════════
-function searchInventory(){
-  if(!currentUser)return toast('Inicia sesión para usar Inventario','error');
-  const term=document.getElementById('invSearchInput')?.value?.trim();if(!term)return;
+function searchInventory() {
+  if (!currentUser) return toast('Inicia sesión para usar Inventario','error');
+  const term = document.getElementById('invSearchInput')?.value?.trim(); if (!term) return;
   document.getElementById('invModeTitle').classList.add('d-none');
-  const localResults=buscarEnCacheInventario(term);
-  if(localResults&&localResults.length>0){
-    invData=localResults.map((r,idx)=>({rowIndex:r[8]||(idx+2),code:r[0]?.toString().trim()||'',descripcion:r[1]?.toString().trim()||'',unidad:r[2]?.toString().trim()||'',cantidadERP:parseFloat(r[3])||0,locator:r[4]?.toString().trim()||'',orgCode:r[5]?.toString().trim()||'',cantidadFisica:r[6]===''||r[6]==null?null:parseFloat(r[6])}));
-    invData.sort((a,b)=>a.locator.localeCompare(b.locator));
-    renderInvTable(invData);updateFloatSave();
-    toast(`${invData.length} resultado(s) — caché local`,'info');
-    _searchInventoryServer(term,true);return;
+
+  // Intentar búsqueda local en caché
+  const localResults = buscarEnCacheInventario(term);
+  if (localResults && localResults.length > 0) {
+    // Convertir formato de caché a formato de invData
+    invData = localResults.map((r, idx) => ({
+      rowIndex: r[8] || (idx+2),
+      code:         r[0]?.toString().trim()||'',
+      descripcion:  r[1]?.toString().trim()||'',
+      unidad:       r[2]?.toString().trim()||'',
+      cantidadERP:  parseFloat(r[3])||0,
+      locator:      r[4]?.toString().trim()||'',
+      orgCode:      r[5]?.toString().trim()||'',
+      cantidadFisica: r[6]===''||r[6]==null ? null : parseFloat(r[6])
+    }));
+    invData.sort((a,b) => a.locator.localeCompare(b.locator));
+    renderInvTable(invData); updateFloatSave();
+    toast(`${invData.length} resultado(s) — caché local`, 'info');
+    // Actualizar desde servidor en background
+    _searchInventoryServer(term, true);
+    return;
   }
-  _searchInventoryServer(term,false);
+
+  // Sin caché o sin resultados: ir al servidor
+  _searchInventoryServer(term, false);
 }
-function _searchInventoryServer(term,background){
-  if(!background)showInvLoader(true);
-  api('searchInventory',{searchTerm:term,userEmail:currentUser.email}).then(res=>{
-    if(!background)showInvLoader(false);
-    if(res.success){invData=res.results;renderInvTable(res.results);updateFloatSave();if(!background)toast(`${res.results.length} resultado(s)`);}
-    else if(!background)toast(res.message,'error');
-  }).catch(e=>{if(!background){showInvLoader(false);toast(e.message,'error');}});
+
+function _searchInventoryServer(term, background) {
+  if (!background) showInvLoader(true);
+  api('searchInventory', { searchTerm:term, userEmail:currentUser.email }).then(res => {
+    if (!background) showInvLoader(false);
+    if (res.success) { invData=res.results; renderInvTable(res.results); updateFloatSave(); if (!background) toast(`${res.results.length} resultado(s)`); }
+    else if (!background) toast(res.message,'error');
+  }).catch(e => { if (!background) { showInvLoader(false); toast(e.message,'error'); } });
 }
-function loadReorder(){
-  if(!currentUser){toast('Inicia sesión primero','error');return;}
+
+function loadReorder() {
+  if (!currentUser) { toast('Inicia sesión primero','error'); return; }
   showInvLoader(true);
-  api('getReorderItems',{userEmail:currentUser.email}).then(res=>{
+  api('getReorderItems', { userEmail:currentUser.email }).then(res => {
     showInvLoader(false);
-    if(res.success){invData=res.results;document.getElementById('invModeTitle').classList.remove('d-none');renderInvTable(res.results);updateFloatSave();}
+    if (res.success) { invData=res.results; document.getElementById('invModeTitle').classList.remove('d-none'); renderInvTable(res.results); updateFloatSave(); }
     else toast(res.message,'error');
-  }).catch(e=>{showInvLoader(false);toast(e.message,'error');});
+  }).catch(e => { showInvLoader(false); toast(e.message,'error'); });
 }
-function renderInvTable(data){
-  const tbody=document.getElementById('invBody');tbody.innerHTML='';
-  if(!data?.length){document.getElementById('invWrapper').style.display='none';document.getElementById('invEmptyState').style.display='block';return;}
-  document.getElementById('invEmptyState').style.display='none';document.getElementById('invWrapper').style.display='block';
-  data.forEach(item=>{
-    const pending=invPendingUpdates.hasOwnProperty(item.rowIndex)?invPendingUpdates[item.rowIndex]:(item.cantidadFisica!==null?item.cantidadFisica:'');
-    const valNum=pending===''?0:pending;const diff=valNum-item.cantidadERP;
-    const diffBadge=diff===0?`<span class="diff-zero">0</span>`:diff>0?`<span class="diff-pos">+${diff}</span>`:`<span class="diff-neg">${diff}</span>`;
-    tbody.innerHTML+=`<tr>
+
+function renderInvTable(data) {
+  const tbody = document.getElementById('invBody'); tbody.innerHTML='';
+  if (!data?.length) { document.getElementById('invWrapper').style.display='none'; document.getElementById('invEmptyState').style.display='block'; return; }
+  document.getElementById('invEmptyState').style.display='none'; document.getElementById('invWrapper').style.display='block';
+  data.forEach(item => {
+    const pending = invPendingUpdates.hasOwnProperty(item.rowIndex) ? invPendingUpdates[item.rowIndex] : (item.cantidadFisica!==null?item.cantidadFisica:'');
+    const valNum = pending===''?0:pending; const diff = valNum-item.cantidadERP;
+    const diffBadge = diff===0?`<span class="diff-zero">0</span>`:diff>0?`<span class="diff-pos">+${diff}</span>`:`<span class="diff-neg">${diff}</span>`;
+    tbody.innerHTML += `<tr>
       <td><span class="badge bg-dark" style="font-size:.72rem;">${item.locator}</span></td>
       <td><small class="fw-bold text-muted">${item.orgCode}</small></td>
       <td class="fw-bold text-primary">${item.code}</td>
@@ -1759,67 +1857,40 @@ function renderInvTable(data){
     </tr>`;
   });
 }
-function regInvChange(rowIndex,val){const newQty=val===''?null:parseFloat(val);const item=invData.find(i=>i.rowIndex===rowIndex);if(item)invItemsCache[rowIndex]={code:item.code,desc:item.descripcion,locator:item.locator,erp:item.cantidadERP};if(newQty===null)delete invPendingUpdates[rowIndex];else invPendingUpdates[rowIndex]=newQty;updateFloatSave();renderInvTable(invData);}
-function updateFloatSave(){const c=Object.keys(invPendingUpdates).length;document.getElementById('invChangeCount').textContent=c;document.getElementById('floatSave').style.display=c>0?'block':'none';}
-function showInvLoader(show){if(show){document.getElementById('invEmptyState').innerHTML='<div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div><p class="mt-2 text-muted">Cargando…</p>';document.getElementById('invEmptyState').style.display='block';document.getElementById('invWrapper').style.display='none';}else{document.getElementById('invEmptyState').innerHTML='<i class="fas fa-search fa-3x text-muted opacity-25"></i><p class="text-muted mt-3">Usa el buscador en la barra superior</p>';}}
-function renderInvSidebar(){const c=document.getElementById('invSidebarContent');c.innerHTML='';const rows=Object.keys(invPendingUpdates);if(!rows.length){c.innerHTML='<p class="text-center text-muted">No hay cambios.</p>';return;}rows.forEach(rIdx=>{const info=invItemsCache[rIdx],newQ=invPendingUpdates[rIdx];c.innerHTML+=`<div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:10px;border-left:4px solid var(--brand);"><div class="d-flex justify-content-between"><strong>${info.code}</strong><span class="badge bg-secondary">${info.locator}</span></div><div class="mt-2 d-flex justify-content-between align-items-center"><small>ERP: ${info.erp}</small><span class="fw-bold text-primary">→ ${newQ}</span></div></div>`;});}
-function saveInvChanges(){if(!currentUser)return toast('Inicia sesión primero','error');const updates=Object.keys(invPendingUpdates).map(k=>({rowIndex:parseInt(k),quantity:invPendingUpdates[k]}));bootstrap.Offcanvas.getInstance(document.getElementById('sidebarChanges'))?.hide();showInvLoader(true);api('saveInventoryChanges',{updates,userEmail:currentUser.email}).then(res=>{showInvLoader(false);if(res.success){toast('Cambios guardados');invPendingUpdates={};invItemsCache={};updateFloatSave();cacheClear(CACHE_KEYS.INV);setCacheStatus('Inv','stale');setTimeout(_preloadInventario,2000);}else toast(res.message,'error');}).catch(e=>{showInvLoader(false);toast(e.message,'error');});}
-function clearInvChanges(){if(!confirm('¿Descartar todos los cambios?'))return;invPendingUpdates={};updateFloatSave();bootstrap.Offcanvas.getInstance(document.getElementById('sidebarChanges'))?.hide();renderInvTable(invData);}
-function clearReorderMode(){document.getElementById('invModeTitle').classList.add('d-none');}
-function sortInv(col){const isNum=col===4;const dir=invSortDirs[col]?1:-1;invData.sort((a,b)=>{let vA,vB;if(col===0){vA=a.locator;vB=b.locator;}else if(col===1){vA=a.orgCode;vB=b.orgCode;}else if(col===2){vA=a.code;vB=b.code;}else if(col===3){vA=a.descripcion;vB=b.descripcion;}else{vA=a.cantidadERP;vB=b.cantidadERP;}if(vA===vB)return 0;return isNum?(vA-vB)*dir:vA.toString().localeCompare(vB.toString())*dir;});invSortDirs[col]=!invSortDirs[col];renderInvTable(invData);}
-function prepTransfer(rowIndex){const item=invData.find(d=>d.rowIndex===rowIndex);if(!item)return;document.getElementById('trRowIndex').value=rowIndex;document.getElementById('trCode').textContent=item.code;document.getElementById('trDesc').textContent=item.descripcion;document.getElementById('trCurrentLoc').textContent=item.locator;document.getElementById('trQty').value=invPendingUpdates[rowIndex]||item.cantidadFisica||item.cantidadERP;new bootstrap.Modal(document.getElementById('transferModal')).show();}
-function submitTransfer(){if(!currentUser)return toast('Inicia sesión primero','error');const data={rowIndex:parseInt(document.getElementById('trRowIndex').value),nuevaUbicacion:document.getElementById('trNewLoc').value,nuevaCantidad:parseFloat(document.getElementById('trQty').value)};bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();api('registerTransfer',{data,email:currentUser.email}).then(res=>{toast(res.message,res.success?'success':'error');if(res.success)searchInventory();}).catch(e=>toast(e.message,'error'));}
-function openManualFinding(){new bootstrap.Modal(document.getElementById('manualFindingModal')).show();}
-function submitManualFinding(){if(!currentUser)return toast('Inicia sesión primero','error');const data={code:document.getElementById('mfCode').value,description:document.getElementById('mfDesc').value,quantity:document.getElementById('mfQty').value,organization:document.getElementById('mfOrg').value,location:document.getElementById('mfLoc').value};bootstrap.Modal.getInstance(document.getElementById('manualFindingModal')).hide();api('addManualFinding',{data,email:currentUser.email}).then(res=>{toast(res.message,res.success?'success':'error');}).catch(e=>toast(e.message,'error'));}
-function syncStock(){if(!confirm('¿Sincronizar Stock?'))return;const btn=document.getElementById('btnSync');btn.disabled=true;api('ejecutarSincronizacion',{}).then(res=>{btn.disabled=false;cacheClear(CACHE_KEYS.INV);setCacheStatus('Inv','loading');setTimeout(_preloadInventario,3000);toast(res.success?res.message||'✓ Sync OK':(res.message||'Error'),'error');}).catch(e=>{btn.disabled=false;toast(e.message,'error');});}
 
-function startScanner(ctx){scanContext=ctx;const modal=new bootstrap.Modal(document.getElementById('scannerModal'));modal.show();codeReader=new ZXing.BrowserMultiFormatReader();codeReader.decodeFromConstraints({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}},'videoElement',(result)=>{if(result){stopScanner();if(scanContext==='search'){const curr=document.getElementById('invSearchInput').value;document.getElementById('invSearchInput').value=curr?(curr+' '+result.text):result.text;searchInventory();}else if(scanContext==='manual'){document.getElementById('mfCode').value=result.text;}}}).catch(e=>console.error(e));}
-function stopScanner(){if(codeReader){codeReader.reset();codeReader=null;}bootstrap.Modal.getInstance(document.getElementById('scannerModal'))?.hide();}
+function regInvChange(rowIndex, val) { const newQty=val===''?null:parseFloat(val); const item=invData.find(i=>i.rowIndex===rowIndex); if(item)invItemsCache[rowIndex]={code:item.code,desc:item.descripcion,locator:item.locator,erp:item.cantidadERP}; if(newQty===null)delete invPendingUpdates[rowIndex];else invPendingUpdates[rowIndex]=newQty; updateFloatSave(); renderInvTable(invData); }
+function updateFloatSave() { const c=Object.keys(invPendingUpdates).length; document.getElementById('invChangeCount').textContent=c; document.getElementById('floatSave').style.display=c>0?'block':'none'; }
+function showInvLoader(show) { if(show){document.getElementById('invEmptyState').innerHTML='<div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div><p class="mt-2 text-muted">Cargando…</p>';document.getElementById('invEmptyState').style.display='block';document.getElementById('invWrapper').style.display='none';}else{document.getElementById('invEmptyState').innerHTML='<i class="fas fa-search fa-3x text-muted opacity-25"></i><p class="text-muted mt-3">Usa el buscador en la barra superior</p>';} }
+function renderInvSidebar() { const c=document.getElementById('invSidebarContent');c.innerHTML='';const rows=Object.keys(invPendingUpdates);if(!rows.length){c.innerHTML='<p class="text-center text-muted">No hay cambios.</p>';return;}rows.forEach(rIdx=>{const info=invItemsCache[rIdx],newQ=invPendingUpdates[rIdx];c.innerHTML+=`<div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:10px;box-shadow:0 2px 5px rgba(0,0,0,.05);border-left:4px solid var(--brand);"><div class="d-flex justify-content-between"><strong>${info.code}</strong><span class="badge bg-secondary">${info.locator}</span></div><div class="mt-2 d-flex justify-content-between align-items-center"><small>ERP: ${info.erp}</small><span class="fw-bold text-primary">→ ${newQ}</span></div></div>`;}); }
+function saveInvChanges() { if(!currentUser)return toast('Inicia sesión primero','error'); const updates=Object.keys(invPendingUpdates).map(k=>({rowIndex:parseInt(k),quantity:invPendingUpdates[k]})); bootstrap.Offcanvas.getInstance(document.getElementById('sidebarChanges'))?.hide(); showInvLoader(true); api('saveInventoryChanges',{updates,userEmail:currentUser.email}).then(res=>{showInvLoader(false);if(res.success){toast('Cambios guardados');invPendingUpdates={};invItemsCache={};updateFloatSave();cacheClear(CACHE_KEYS.INV);setCacheStatus('Inv','stale');setTimeout(_preloadInventario,2000);}else toast(res.message,'error');}).catch(e=>{showInvLoader(false);toast(e.message,'error');}); }
+function clearInvChanges() { if(!confirm('¿Descartar todos los cambios?'))return; invPendingUpdates={};updateFloatSave();bootstrap.Offcanvas.getInstance(document.getElementById('sidebarChanges'))?.hide();renderInvTable(invData); }
+function clearReorderMode() { document.getElementById('invModeTitle').classList.add('d-none'); }
+function sortInv(col) { const isNum=col===4;const dir=invSortDirs[col]?1:-1;invData.sort((a,b)=>{let vA,vB;if(col===0){vA=a.locator;vB=b.locator;}else if(col===1){vA=a.orgCode;vB=b.orgCode;}else if(col===2){vA=a.code;vB=b.code;}else if(col===3){vA=a.descripcion;vB=b.descripcion;}else{vA=a.cantidadERP;vB=b.cantidadERP;}if(vA===vB)return 0;return isNum?(vA-vB)*dir:vA.toString().localeCompare(vB.toString())*dir;});invSortDirs[col]=!invSortDirs[col];renderInvTable(invData); }
+function prepTransfer(rowIndex) { const item=invData.find(d=>d.rowIndex===rowIndex);if(!item)return;document.getElementById('trRowIndex').value=rowIndex;document.getElementById('trCode').textContent=item.code;document.getElementById('trDesc').textContent=item.descripcion;document.getElementById('trCurrentLoc').textContent=item.locator;document.getElementById('trQty').value=invPendingUpdates[rowIndex]||item.cantidadFisica||item.cantidadERP;new bootstrap.Modal(document.getElementById('transferModal')).show(); }
+function submitTransfer() { if(!currentUser)return toast('Inicia sesión primero','error');const data={rowIndex:parseInt(document.getElementById('trRowIndex').value),nuevaUbicacion:document.getElementById('trNewLoc').value,nuevaCantidad:parseFloat(document.getElementById('trQty').value)};bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();api('registerTransfer',{data,email:currentUser.email}).then(res=>{toast(res.message,res.success?'success':'error');if(res.success)searchInventory();}).catch(e=>toast(e.message,'error')); }
+function openManualFinding() { new bootstrap.Modal(document.getElementById('manualFindingModal')).show(); }
+function submitManualFinding() { if(!currentUser)return toast('Inicia sesión primero','error');const data={code:document.getElementById('mfCode').value,description:document.getElementById('mfDesc').value,quantity:document.getElementById('mfQty').value,organization:document.getElementById('mfOrg').value,location:document.getElementById('mfLoc').value};bootstrap.Modal.getInstance(document.getElementById('manualFindingModal')).hide();api('addManualFinding',{data,email:currentUser.email}).then(res=>{toast(res.message,res.success?'success':'error');}).catch(e=>toast(e.message,'error')); }
+function syncStock() { if(!confirm('¿Sincronizar Stock?'))return;const btn=document.getElementById('btnSync');btn.disabled=true;api('ejecutarSincronizacion',{}).then(res=>{btn.disabled=false;cacheClear(CACHE_KEYS.INV);setCacheStatus('Inv','loading');setTimeout(_preloadInventario,3000);toast(res.success?res.message||'✓ Sync OK':(res.message||'Error'),'error');}).catch(e=>{btn.disabled=false;toast(e.message,'error');}); }
+
+// Scanner
+function startScanner(ctx) { scanContext=ctx;const modal=new bootstrap.Modal(document.getElementById('scannerModal'));modal.show();codeReader=new ZXing.BrowserMultiFormatReader();codeReader.decodeFromConstraints({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}},'videoElement',(result)=>{if(result){stopScanner();if(scanContext==='search'){const curr=document.getElementById('invSearchInput').value;document.getElementById('invSearchInput').value=curr?(curr+' '+result.text):result.text;searchInventory();}else if(scanContext==='manual'){document.getElementById('mfCode').value=result.text;}}}).catch(e=>console.error(e)); }
+function stopScanner() { if(codeReader){codeReader.reset();codeReader=null;}bootstrap.Modal.getInstance(document.getElementById('scannerModal'))?.hide(); }
 
 // ══════════════════════════════════════════════════════════
 //  MÓDULO: PENDIENTES GIN
 // ══════════════════════════════════════════════════════════
-function loadGINData(){api('getGINInitialData',{}).then(data=>{ginInitialData=data;const r=document.getElementById('ginReason'),b=document.getElementById('ginBuyer'),rp=document.getElementById('ginReporter');r.innerHTML='<option value="">Seleccione…</option>';data.reasons?.forEach(x=>r.innerHTML+=`<option>${x}</option>`);b.innerHTML='<option value="">Seleccione…</option>';data.buyers?.forEach(x=>b.innerHTML+=`<option value="${x.nombre}">${x.nombre}</option>`);rp.innerHTML='<option value="">Seleccione…</option>';data.reporters?.forEach(x=>rp.innerHTML+=`<option>${x}</option>`);}).catch(e=>toast('Error GIN: '+e.message,'error'));}
+function loadGINData() { api('getGINInitialData',{}).then(data=>{ginInitialData=data;const r=document.getElementById('ginReason'),b=document.getElementById('ginBuyer'),rp=document.getElementById('ginReporter');r.innerHTML='<option value="">Seleccione…</option>';data.reasons?.forEach(x=>r.innerHTML+=`<option>${x}</option>`);b.innerHTML='<option value="">Seleccione…</option>';data.buyers?.forEach(x=>b.innerHTML+=`<option value="${x.nombre}">${x.nombre}</option>`);rp.innerHTML='<option value="">Seleccione…</option>';data.reporters?.forEach(x=>rp.innerHTML+=`<option>${x}</option>`);}).catch(e=>toast('Error GIN: '+e.message,'error')); }
+function searchGinPO() { const po=document.getElementById('ginPoInput').value.trim();if(!po)return toast('Ingresa una PO','error');loadBtn('btnSearchGinPO',true);api('searchGINPO',{poNumber:po}).then(res=>{loadBtn('btnSearchGinPO',false);if(res.success){ginPOData=res;displayGINPOResults(res);document.getElementById('ginVendor').value=res.vendorName||'';document.getElementById('ginOrg').value=res.orgCode||'';}else if(res.allowContinue){document.getElementById('ginContinueMsg').style.display='block';document.getElementById('ginItemsTable').style.display='none';document.getElementById('ginPOResults').style.display='block';}else toast(res.message,'error');}).catch(e=>{loadBtn('btnSearchGinPO',false);toast(e.message,'error');}); }
+function displayGINPOResults(data) { ginSelectedItems=[];const tbody=document.getElementById('ginItemsList');tbody.innerHTML='';document.getElementById('ginContinueMsg').style.display='none';document.getElementById('ginItemsTable').style.display='block';document.getElementById('ginPOResults').style.display='block';data.items?.forEach((item,i)=>{tbody.innerHTML+=`<tr><td><input type="checkbox" class="form-check-input gin-item-chk" data-idx="${i}" onchange="ginToggleItem(this)"></td><td>${item.ITEM_CODE||''}</td><td>${item.DESCRIPTION||''}</td><td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.QUANTITY||0}" id="ginQty${i}"></td><td>${item.REQ_CANCELL||''}</td><td><input type="text" class="form-control form-control-sm" placeholder="Ubicación" id="ginUbic${i}"></td><td><input type="text" class="form-control form-control-sm" placeholder="Comentarios" id="ginCom${i}"></td></tr>`;});}
+function ginToggleItem(chk) { const i=parseInt(chk.dataset.idx),item=ginPOData?.items[i];if(!item)return;if(chk.checked)ginSelectedItems[i]={...item,QUANTITY:document.getElementById(`ginQty${i}`).value,UBICACION:document.getElementById(`ginUbic${i}`).value,COMENTARIOS:document.getElementById(`ginCom${i}`).value};else ginSelectedItems[i]=null; }
+function continueGINWithoutPO() { ginPOData={success:false,items:[],vendorName:'',orgCode:''};ginNextTo(2); }
+function ginNextTo(step) { if(step===2){ginSelectedItems=(ginSelectedItems||[]).filter(Boolean);if(!ginPOData)return toast('Busca una PO primero','error');if(ginPOData.success&&ginSelectedItems.length===0)return toast('Selecciona al menos un item','error');if(!ginPOData.success)ginPOData.items=[];}if(step===3){if(!document.getElementById('ginInvoice').value.trim())return toast('Factura es obligatoria','error');if(!document.getElementById('ginDate').value)return toast('Fecha es obligatoria','error');if(!document.getElementById('ginReason').value)return toast('Selecciona un motivo','error');if(!document.getElementById('ginBuyer').value)return toast('Selecciona un comprador','error');if(!document.getElementById('ginReporter').value)return toast('Selecciona quien reporta','error');}if(step===4){if(ginMaterialFiles.length===0)return toast('Sube al menos una foto del material','error');fillGINConfirmation();}ginGoTo(step); }
+function ginGoTo(step) { document.querySelectorAll('.gin-section').forEach(s=>s.classList.remove('active'));document.getElementById(`gsec${step}`)?.classList.add('active');for(let i=1;i<=4;i++){const el=document.getElementById(`gstep${i}`);el.classList.remove('active','done');if(i<step)el.classList.add('done');else if(i===step)el.classList.add('active');} }
+function handleGINFiles(files,type) { const listId=type==='factura'?'facturaFileList':'materialFileList';const arr=type==='factura'?ginFacturaFiles:ginMaterialFiles;for(const f of files){const id=Date.now()+Math.random();arr.push({id,file:f});document.getElementById(listId).innerHTML+=`<div class="file-item" id="gfile-${id}"><i class="fas fa-file me-2"></i><span class="file-name">${f.name}</span><i class="fas fa-times remove-file" onclick="removeGINFile('${id}','${type}')"></i></div>`;} }
+function removeGINFile(id,type) { if(type==='factura')ginFacturaFiles=ginFacturaFiles.filter(f=>f.id!=id);else ginMaterialFiles=ginMaterialFiles.filter(f=>f.id!=id);document.getElementById(`gfile-${id}`)?.remove(); }
+function fillGINConfirmation() { document.getElementById('cPO').textContent=document.getElementById('ginPoInput').value;document.getElementById('cVendor').textContent=document.getElementById('ginVendor').value;document.getElementById('cInvoice').textContent=document.getElementById('ginInvoice').value;document.getElementById('cDate').textContent=document.getElementById('ginDate').value;document.getElementById('cReason').textContent=document.getElementById('ginReason').value;document.getElementById('cBuyer').textContent=document.getElementById('ginBuyer').value;document.getElementById('cComents').textContent=document.getElementById('ginComents').value||'Ninguno';const items=document.getElementById('cItems');items.innerHTML='';(ginPOData?.items||[]).forEach((item,i)=>{if(ginSelectedItems[i]||!ginPOData.success)items.innerHTML+=`<li>${item.ITEM_CODE}: ${item.DESCRIPTION}</li>`;});const files=document.getElementById('cFiles');files.innerHTML='';[...ginFacturaFiles,...ginMaterialFiles].forEach(f=>files.innerHTML+=`<li>${f.file.name}</li>`); }
 
-// FIX 3: searchGinPO busca en caché antes de ir al servidor
-function searchGinPO(){
-  const po=document.getElementById('ginPoInput').value.trim();
-  if(!po) return toast('Ingresa una PO','error');
-  if(po==='0'){
-    // Continuar sin PO directamente
-    continueGINWithoutPO();
-    return;
-  }
-  // Intentar caché primero
-  const localResult = buscarGINPOEnCache(po);
-  if(localResult){
-    ginPOData=localResult;
-    displayGINPOResults(localResult);
-    document.getElementById('ginVendor').value=localResult.vendorName||'';
-    document.getElementById('ginOrg').value=localResult.orgCode||'';
-    toast(`${localResult.items.length} items — caché local`,'info');
-    return;
-  }
-  // Sin caché: ir al servidor
-  loadBtn('btnSearchGinPO',true);
-  api('searchGINPO',{poNumber:po}).then(res=>{
-    loadBtn('btnSearchGinPO',false);
-    if(res.success){ginPOData=res;displayGINPOResults(res);document.getElementById('ginVendor').value=res.vendorName||'';document.getElementById('ginOrg').value=res.orgCode||'';}
-    else if(res.allowContinue){document.getElementById('ginContinueMsg').style.display='block';document.getElementById('ginItemsTable').style.display='none';document.getElementById('ginPOResults').style.display='block';}
-    else toast(res.message,'error');
-  }).catch(e=>{loadBtn('btnSearchGinPO',false);toast(e.message,'error');});
-}
-
-function displayGINPOResults(data){ginSelectedItems=[];const tbody=document.getElementById('ginItemsList');tbody.innerHTML='';document.getElementById('ginContinueMsg').style.display='none';document.getElementById('ginItemsTable').style.display='block';document.getElementById('ginPOResults').style.display='block';data.items?.forEach((item,i)=>{tbody.innerHTML+=`<tr><td><input type="checkbox" class="form-check-input gin-item-chk" data-idx="${i}" onchange="ginToggleItem(this)"></td><td>${item.ITEM_CODE||''}</td><td>${item.DESCRIPTION||''}</td><td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.QUANTITY||0}" id="ginQty${i}"></td><td>${item.REQ_CANCELL||''}</td><td><input type="text" class="form-control form-control-sm" placeholder="Ubicación" id="ginUbic${i}"></td><td><input type="text" class="form-control form-control-sm" placeholder="Comentarios" id="ginCom${i}"></td></tr>`;});}
-function ginToggleItem(chk){const i=parseInt(chk.dataset.idx),item=ginPOData?.items[i];if(!item)return;if(chk.checked)ginSelectedItems[i]={...item,QUANTITY:document.getElementById(`ginQty${i}`).value,UBICACION:document.getElementById(`ginUbic${i}`).value,COMENTARIOS:document.getElementById(`ginCom${i}`).value};else ginSelectedItems[i]=null;}
-function continueGINWithoutPO(){ginPOData={success:false,items:[],vendorName:'',orgCode:''};ginNextTo(2);}
-function ginNextTo(step){if(step===2){ginSelectedItems=(ginSelectedItems||[]).filter(Boolean);if(!ginPOData)return toast('Busca una PO primero','error');if(ginPOData.success&&ginSelectedItems.length===0)return toast('Selecciona al menos un item','error');if(!ginPOData.success)ginPOData.items=[];}if(step===3){if(!document.getElementById('ginInvoice').value.trim())return toast('Factura es obligatoria','error');if(!document.getElementById('ginDate').value)return toast('Fecha es obligatoria','error');if(!document.getElementById('ginReason').value)return toast('Selecciona un motivo','error');if(!document.getElementById('ginBuyer').value)return toast('Selecciona un comprador','error');if(!document.getElementById('ginReporter').value)return toast('Selecciona quien reporta','error');}if(step===4){if(ginMaterialFiles.length===0)return toast('Sube al menos una foto del material','error');fillGINConfirmation();}ginGoTo(step);}
-function ginGoTo(step){document.querySelectorAll('.gin-section').forEach(s=>s.classList.remove('active'));document.getElementById(`gsec${step}`)?.classList.add('active');for(let i=1;i<=4;i++){const el=document.getElementById(`gstep${i}`);el.classList.remove('active','done');if(i<step)el.classList.add('done');else if(i===step)el.classList.add('active');}}
-function handleGINFiles(files,type){const listId=type==='factura'?'facturaFileList':'materialFileList';const arr=type==='factura'?ginFacturaFiles:ginMaterialFiles;for(const f of files){const id=Date.now()+Math.random();arr.push({id,file:f});document.getElementById(listId).innerHTML+=`<div class="file-item" id="gfile-${id}"><i class="fas fa-file me-2"></i><span class="file-name">${f.name}</span><i class="fas fa-times remove-file" onclick="removeGINFile('${id}','${type}')"></i></div>`;}}
-function removeGINFile(id,type){if(type==='factura')ginFacturaFiles=ginFacturaFiles.filter(f=>f.id!=id);else ginMaterialFiles=ginMaterialFiles.filter(f=>f.id!=id);document.getElementById(`gfile-${id}`)?.remove();}
-function fillGINConfirmation(){document.getElementById('cPO').textContent=document.getElementById('ginPoInput').value;document.getElementById('cVendor').textContent=document.getElementById('ginVendor').value;document.getElementById('cInvoice').textContent=document.getElementById('ginInvoice').value;document.getElementById('cDate').textContent=document.getElementById('ginDate').value;document.getElementById('cReason').textContent=document.getElementById('ginReason').value;document.getElementById('cBuyer').textContent=document.getElementById('ginBuyer').value;document.getElementById('cComents').textContent=document.getElementById('ginComents').value||'Ninguno';const items=document.getElementById('cItems');items.innerHTML='';(ginPOData?.items||[]).forEach((item,i)=>{if(ginSelectedItems[i]||!ginPOData.success)items.innerHTML+=`<li>${item.ITEM_CODE}: ${item.DESCRIPTION}</li>`;});const files=document.getElementById('cFiles');files.innerHTML='';[...ginFacturaFiles,...ginMaterialFiles].forEach(f=>files.innerHTML+=`<li>${f.file.name}</li>`);}
-
-function submitGIN(){
+function submitGIN() {
   const formData={poNumber:document.getElementById('ginPoInput').value,vendorName:document.getElementById('ginVendor').value,orgCode:document.getElementById('ginOrg').value,invoice:document.getElementById('ginInvoice').value,invoiceReceivedDate:document.getElementById('ginDate').value,reason:document.getElementById('ginReason').value,unit:document.getElementById('ginUnit').value,buyerExpeditor:document.getElementById('ginBuyer').value,reportedBy:document.getElementById('ginReporter').value,comentarios:document.getElementById('ginComents').value,items:ginSelectedItems.filter(Boolean)};
   loadBtn('btnSubmitGIN',true);
   const processFiles=(files,cb)=>{if(!files.length)return cb([]);const out=[];let done=0;files.forEach(fd=>{const r=new FileReader();r.onload=e=>{out.push({id:fd.id,name:fd.file.name,mimeType:fd.file.type,data:e.target.result.split(',')[1]});if(++done===files.length)cb(out);};r.readAsDataURL(fd.file);});};
@@ -1827,26 +1898,34 @@ function submitGIN(){
     api('processCompleteForm',{formData,facturaFiles:pF,materialFiles:pM}).then(res=>{loadBtn('btnSubmitGIN',false);if(res.success){document.getElementById('ginResultId').textContent=res.id;document.getElementById('ginSuccessModal').classList.add('show');}else toast(res.message||'Error','error');}).catch(e=>{loadBtn('btnSubmitGIN',false);toast(e.message,'error');});
   });});
 }
-function closeGINSuccess(){document.getElementById('ginSuccessModal').classList.remove('show');}
-function resetGINForm(){ginPOData=null;ginSelectedItems=[];ginFacturaFiles=[];ginMaterialFiles=[];['ginPoInput','ginVendor','ginOrg','ginInvoice','ginUnit','ginComents'].forEach(id=>document.getElementById(id).value='');document.getElementById('ginDate').value=new Date().toISOString().split('T')[0];['ginReason','ginBuyer','ginReporter'].forEach(id=>document.getElementById(id).selectedIndex=0);['ginItemsList','facturaFileList','materialFileList'].forEach(id=>document.getElementById(id).innerHTML='');document.getElementById('ginPOResults').style.display='none';ginGoTo(1);}
+function closeGINSuccess() { document.getElementById('ginSuccessModal').classList.remove('show'); }
+function resetGINForm() { ginPOData=null;ginSelectedItems=[];ginFacturaFiles=[];ginMaterialFiles=[];['ginPoInput','ginVendor','ginOrg','ginInvoice','ginUnit','ginComents'].forEach(id=>document.getElementById(id).value='');document.getElementById('ginDate').value=new Date().toISOString().split('T')[0];['ginReason','ginBuyer','ginReporter'].forEach(id=>document.getElementById(id).selectedIndex=0);['ginItemsList','facturaFileList','materialFileList'].forEach(id=>document.getElementById(id).innerHTML='');document.getElementById('ginPOResults').style.display='none';ginGoTo(1); }
 
 // ══════════════════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════════════════
-const BTN_LABELS={btnSearchPO:'<i class="fas fa-search"></i>',btnBuscarConsulta:'<i class="fas fa-search me-1"></i>Buscar',btnSave:'<i class="fas fa-save"></i><span>Guardar</span>',btnPrint:'<i class="fas fa-print"></i><span>Etiquetas</span>',btnGuardarEdicion:'<i class="fas fa-save me-1"></i>Guardar ahora',btnConfirmarBorrado:'<i class="fas fa-trash me-1"></i>Eliminar',btnGuardarLote:'<i class="fas fa-save me-1"></i>Guardar Todo',btnSubmitGIN:'<i class="fas fa-paper-plane me-2"></i>Enviar Registro',btnSearchGinPO:'<i class="fas fa-search me-1"></i>Buscar',btnSync:'<i class="fas fa-sync me-1"></i>Sync',btnBuscarUnif:'<i class="fas fa-arrow-right"></i>',btnEnviarResp:'<i class="fas fa-paper-plane me-2"></i>Registrar y Enviar',btnUnifFinalizar:'REGISTRAR Y FINALIZAR',btnGuardarTurno:'<i class="fas fa-save me-2"></i>Guardar Pase de Turno'};
-function loadBtn(id,st){const b=document.getElementById(id);if(!b)return;b.disabled=st;b.innerHTML=st?'<span class="spinner-border spinner-border-sm"></span> …':(BTN_LABELS[id]||'OK');}
+const BTN_LABELS = { btnSearchPO:'<i class="fas fa-search"></i>', btnBuscarConsulta:'<i class="fas fa-search me-1"></i>Buscar', btnSave:'<i class="fas fa-save"></i><span>Guardar</span>', btnPrint:'<i class="fas fa-print"></i><span>Etiquetas</span>', btnGuardarEdicion:'<i class="fas fa-save me-1"></i>Guardar ahora', btnConfirmarBorrado:'<i class="fas fa-trash me-1"></i>Eliminar', btnGuardarLote:'<i class="fas fa-save me-1"></i>Guardar Todo', btnSubmitGIN:'<i class="fas fa-paper-plane me-2"></i>Enviar Registro', btnSearchGinPO:'<i class="fas fa-search me-1"></i>Buscar', btnSync:'<i class="fas fa-sync me-1"></i>Sync', btnBuscarUnif:'<i class="fas fa-arrow-right"></i>', btnEnviarResp:'<i class="fas fa-paper-plane me-2"></i>Registrar y Enviar', btnUnifFinalizar:'REGISTRAR Y FINALIZAR', btnGuardarTurno:'<i class="fas fa-save me-2"></i>Guardar Pase de Turno' };
+function loadBtn(id, st) { const b=document.getElementById(id);if(!b)return;b.disabled=st;b.innerHTML=st?'<span class="spinner-border spinner-border-sm"></span> …':(BTN_LABELS[id]||'OK'); }
 
 let _toastTimer;
-function toast(msg,type='success'){const wrap=document.getElementById('toastWrap'),inner=document.getElementById('toastInner');inner.className=`toast-inner toast-${type}`;const icons={success:'fas fa-check-circle fa-lg',error:'fas fa-times-circle fa-lg',info:'fas fa-info-circle fa-lg'};document.getElementById('toastIcon').className=icons[type]||icons.success;document.getElementById('toastMsg').textContent=msg;wrap.style.display='block';clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>wrap.style.display='none',3800);}
+function toast(msg, type='success') {
+  const wrap=document.getElementById('toastWrap'),inner=document.getElementById('toastInner');
+  inner.className=`toast-inner toast-${type}`;
+  const icons={success:'fas fa-check-circle fa-lg',error:'fas fa-times-circle fa-lg',info:'fas fa-info-circle fa-lg'};
+  document.getElementById('toastIcon').className=icons[type]||icons.success;
+  document.getElementById('toastMsg').textContent=msg;
+  wrap.style.display='block'; clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>wrap.style.display='none',3800);
+}
 
 // ══════════════════════════════════════════════════════════
 //  MÓDULO: CARTA RESPONSIVA
 // ══════════════════════════════════════════════════════════
-let respData=null,respItems=[],respPadMain=null,respPadModal=null;
-function switchRespTab(tab,el){document.querySelectorAll('#respTabs .nav-link').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('resp-tab-nueva').style.display=tab==='nueva'?'':'none';document.getElementById('resp-tab-buscar').style.display=tab==='buscar'?'':'none';}
-async function loadRespData(){if(respData)return;try{const res=await api('getRespData');if(!res.success)return toast('Error Responsiva: '+(res.message||'Sin datos'),'error');if(!res.empleados?.length)return toast('Sin empleados en hoja Responsiva','error');respData=res;const dl=document.getElementById('respEmpList');dl.innerHTML=res.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');const areaEl=document.getElementById('respArea'),lineaEl=document.getElementById('respLinea');areaEl.innerHTML='<option value="">Área…</option>'+(res.areas||[]).map(a=>`<option>${a}</option>`).join('');lineaEl.innerHTML='<option value="">Línea…</option>'+(res.lineas||[]).map(l=>`<option>${l}</option>`).join('');setTimeout(()=>{_initRespPads();},150);if(!respItems.length)respAgregarItem();}catch(e){toast('Error: '+e.message,'error');}}
-function _initRespPads(){if(!respPadMain){const c=document.getElementById('respFirmaMain');_respResizeCanvas(c);respPadMain=new SignaturePad(c,{backgroundColor:'white'});}}
-function _respResizeCanvas(c){const r=Math.max(window.devicePixelRatio||1,1);c.width=c.offsetWidth*r;c.height=c.offsetHeight*r;c.getContext('2d').scale(r,r);}
+let respData=null, respItems=[], respPadMain=null, respPadModal=null;
+function switchRespTab(tab,el) { document.querySelectorAll('#respTabs .nav-link').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('resp-tab-nueva').style.display=tab==='nueva'?'':'none';document.getElementById('resp-tab-buscar').style.display=tab==='buscar'?'':'none'; }
+async function loadRespData() { if(respData)return;try{const res=await api('getRespData');if(!res.success)return toast('Error Responsiva: '+(res.message||'Sin datos'),'error');if(!res.empleados?.length)return toast('Sin empleados en hoja Responsiva','error');respData=res;const dl=document.getElementById('respEmpList');dl.innerHTML=res.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');const areaEl=document.getElementById('respArea'),lineaEl=document.getElementById('respLinea');areaEl.innerHTML='<option value="">Área…</option>'+(res.areas||[]).map(a=>`<option>${a}</option>`).join('');lineaEl.innerHTML='<option value="">Línea…</option>'+(res.lineas||[]).map(l=>`<option>${l}</option>`).join('');setTimeout(()=>{_initRespPads();},150);if(!respItems.length)respAgregarItem();}catch(e){toast('Error: '+e.message,'error');} }
+function _initRespPads() { if(!respPadMain){const c=document.getElementById('respFirmaMain');_respResizeCanvas(c);respPadMain=new SignaturePad(c,{backgroundColor:'white'});} }
+function _respResizeCanvas(c) { const r=Math.max(window.devicePixelRatio||1,1);c.width=c.offsetWidth*r;c.height=c.offsetHeight*r;c.getContext('2d').scale(r,r); }
 document.addEventListener('DOMContentLoaded',function(){const re=document.getElementById('respEmpId');if(re)re.addEventListener('input',function(){if(!respData)return;const emp=respData.empleados.find(e=>e.id===this.value.trim());document.getElementById('respEmpNombre').value=emp?emp.nombre:'';});const rm=document.getElementById('respModalEmpId');if(rm)rm.addEventListener('input',function(){if(!respData)return;const emp=respData.empleados.find(e=>e.id===this.value.trim());document.getElementById('respModalEmpNombre').value=emp?emp.nombre:'';});});
 function respAgregarItem(){const id=Date.now();respItems.push({id,cant:1,cod:'',desc:'',obs:'',descLocked:false,responsables:[],fotoFile:null,fotoB64:null});_renderRespItems();}
 function respEliminarItem(id){if(respItems.length<=1)return toast('Mínimo 1 material','error');respItems=respItems.filter(i=>i.id!==id);_renderRespItems();}
@@ -1858,7 +1937,7 @@ d.querySelector('.ri-obs').addEventListener('input',e=>{const it=respItems.find(
 d.querySelector('.ri-btn-cam').addEventListener('click',()=>{const inp=d.querySelector('.ri-foto');inp.setAttribute('capture','camera');inp.click();});
 d.querySelector('.ri-btn-gal').addEventListener('click',()=>{const inp=d.querySelector('.ri-foto');inp.removeAttribute('capture');inp.click();});
 d.querySelector('.ri-foto').addEventListener('change',e=>{const it=respItems.find(i=>i.id===item.id);if(!it)return;it.fotoFile=e.target.files[0]||null;const ok=d.querySelector('.ri-foto-ok');if(ok)ok.style.display=it.fotoFile?'flex':'none';});
-c.appendChild(d);});}
+c.appendChild(d);}); }
 function _renderRespBadges(lista,itemId){if(!lista||!lista.length)return'<span class="text-muted small fst-italic">Nadie</span>';return lista.map((r,i)=>`<span class="resp-badge-co">${r.nombre.split(' ')[0]}<i class="fas fa-times-circle ms-1" style="cursor:pointer;" onclick="respBorrarCoResp(${itemId},${i})"></i></span>`).join('');}
 function respBorrarCoResp(itemId,idx){const it=respItems.find(i=>i.id===itemId);if(!it)return;it.responsables.splice(idx,1);document.getElementById(`rbadges-${itemId}`).innerHTML=_renderRespBadges(it.responsables,itemId);}
 let _respModalItemId=null;
@@ -1869,12 +1948,12 @@ function respGuardarCoResp(){const mode=document.getElementById('respModalMode')
 function respBuscarFolio(){const f=document.getElementById('respFolioBuscar').value.trim();if(!f)return toast('Ingrese un folio','error');api('buscarFolioResp',{folio:f}).then(res=>{const div=document.getElementById('respResultadoBusqueda');if(!res.success)return div.innerHTML=`<div class="alert alert-warning">${res.message||'No encontrado'}</div>`;div.innerHTML='<div class="list-group">'+res.datos.map(d=>`<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>${d.cod}</strong> — ${d.desc}<br><small class="text-muted">${d.titular}</small></div><button class="btn btn-sm btn-outline-primary" onclick="respAbrirModalUpdate('${d.folio}','${d.cod}')">Agregar Persona</button></div>`).join('')+'</div>';}).catch(e=>toast(e.message,'error'));}
 function respAbrirModalUpdate(folio,cod){document.getElementById('respModalMode').value='update';document.getElementById('respModalFolio').value=folio;document.getElementById('respModalCod').value=cod;document.getElementById('respModalEmpId').value='';document.getElementById('respModalEmpNombre').value='';if(respPadModal)respPadModal.clear();else _initRespModalPad();document.getElementById('respModalCoResp').style.display='flex';if(!respPadModal)setTimeout(_initRespModalPad,100);}
 async function enviarResponsiva(){const empId=document.getElementById('respEmpId').value.trim();const empNom=document.getElementById('respEmpNombre').value.trim();const area=document.getElementById('respArea').value;const linea=document.getElementById('respLinea').value;if(!empId||!empNom)return toast('Seleccione un empleado','error');if(!area)return toast('Seleccione un área','error');const itemsValidos=respItems.filter(i=>i.cod);if(!itemsValidos.length)return toast('Agregue al menos un material con código','error');if(!respPadMain||respPadMain.isEmpty())return toast('La firma del responsable es obligatoria','error');document.getElementById('btnEnviarResp').disabled=true;document.getElementById('respSpinner').classList.remove('d-none');try{const itemsFinal=[];for(const h of itemsValidos){let fotoB64=null;if(h.fotoFile)fotoB64=await _fileToB64(h.fotoFile);itemsFinal.push({cant:h.cant||1,cod:h.cod,desc:h.desc,obs:h.obs,fotoBase64:fotoB64,responsables:h.responsables});}const res=await api('procesarResponsiva',{form:{empleadoId:empId,empleadoNombre:empNom,area,linea,firmaBase64:respPadMain.toDataURL(),jsonItems:JSON.stringify(itemsFinal)}});document.getElementById('btnEnviarResp').disabled=false;document.getElementById('respSpinner').classList.add('d-none');if(res.success){toast(`Responsiva registrada: ${res.id}`,'success');document.getElementById('respEmpId').value='';document.getElementById('respEmpNombre').value='';respItems=[];respPadMain.clear();respAgregarItem();}else toast('Error: '+(res.error||res.message),'error');}catch(e){document.getElementById('btnEnviarResp').disabled=false;document.getElementById('respSpinner').classList.add('d-none');toast(e.message,'error');}}
-const _fileToB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.readAsDataURL(file);r.onload=()=>res(r.result);r.onerror=rej;});
+const _fileToB64 = file => new Promise((res,rej)=>{const r=new FileReader();r.readAsDataURL(file);r.onload=()=>res(r.result);r.onerror=rej;});
 
 // ══════════════════════════════════════════════════════════
 //  MÓDULO: UNIFORMES
 // ══════════════════════════════════════════════════════════
-let unifEmp=null,unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false},unifPad=null;
+let unifEmp=null, unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false}, unifPad=null;
 function unifBuscar(){const num=document.getElementById('unifNumEmp').value.trim();if(!num)return toast('Ingrese número de empleado','error');loadBtn('btnBuscarUnif',true);api('getEmpleadoData',{numEmpleado:num}).then(res=>{loadBtn('btnBuscarUnif',false);if(!res.success)return toast(res.message||'No encontrado','error');unifEmp=res;document.getElementById('unifBuscador').style.display='none';document.getElementById('unifContenido').style.display='';document.getElementById('unifNombre').textContent=res.nombre;document.getElementById('unifNomina').textContent=res.numEmp;document.getElementById('unifOrg').textContent=res.organizacion;document.getElementById('unifArea').textContent=res.area;document.getElementById('unifPedido').textContent=res.pedido;document.getElementById('uval-zapatos').textContent=res.zapatos;document.getElementById('uval-camisa').textContent=res.camisa;document.getElementById('uval-pantalon').textContent=res.pantalon;document.getElementById('uval-overol').textContent=res.overol;const alAd=document.getElementById('unifAlertAdelanto');if(res.adelanto&&res.adelanto!=='N/A'){alAd.style.display='';document.getElementById('unifValAdelanto').textContent=res.adelanto;}else alAd.style.display='none';const alAuth=document.getElementById('unifAlertNoAuth');alAuth.style.display=res.autorizado?'none':'';const items=['zapatos','camisa','pantalon','overol','cofia'];unifSel={zapatos:false,camisa:false,pantalon:false,overol:false,cofia:false};items.forEach(k=>{const card=document.getElementById(`ucard-${k}`);const badge=document.getElementById(`ubadge-${k}`);card.classList.remove('selected','delivered');if(res.entregados[k]){card.classList.add('delivered');badge.classList.remove('d-none');}else badge.classList.add('d-none');});if(!res.entregados.cofia)document.getElementById('uval-cofia').textContent='ENTREGAR';document.getElementById('unifSignArea').style.display='none';if(unifPad)unifPad.clear();document.getElementById('unifCheckAcepto').checked=false;document.getElementById('btnUnifFinalizar').disabled=true;}).catch(e=>{loadBtn('btnBuscarUnif',false);toast(e.message,'error');});}
 function unifToggle(key){if(!unifEmp?.autorizado)return;unifSel[key]=!unifSel[key];const card=document.getElementById(`ucard-${key}`);card.classList.toggle('selected',unifSel[key]);const hasSel=Object.values(unifSel).some(v=>v);const sa=document.getElementById('unifSignArea');if(hasSel){sa.style.display='';if(!unifPad)setTimeout(_initUnifPad,100);}else sa.style.display='none';unifValidar();}
 function _initUnifPad(){const c=document.getElementById('unifFirmaCanvas');const r=Math.max(window.devicePixelRatio||1,1);c.width=c.offsetWidth*r;c.height=c.offsetHeight*r;c.getContext('2d').scale(r,r);unifPad=new SignaturePad(c,{backgroundColor:'white'});unifPad.onEnd=unifValidar;}
@@ -1885,7 +1964,7 @@ function unifReset(){unifEmp=null;unifSel={zapatos:false,camisa:false,pantalon:f
 // ══════════════════════════════════════════════════════════
 //  MÓDULO: CAMBIO DE TURNO
 // ══════════════════════════════════════════════════════════
-let turnoFotos={Rampa:null,Inspect:null,Paqueteria:null},turnoResponsablesCargados=false;
+let turnoFotos={Rampa:null,Inspect:null,Paqueteria:null}, turnoResponsablesCargados=false;
 function turnoCargarResponsables(){if(turnoResponsablesCargados)return;api('getTurnoResponsables').then(res=>{if(!res.success)return;['turnoSaliente','turnoEntrante'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;sel.innerHTML='<option value="">Selecciona responsable…</option>';res.responsables.forEach(r=>sel.add(new Option(r,r)));});turnoResponsablesCargados=true;}).catch(()=>{});}
 function turnoCounter(delta){const el=document.getElementById('turnoGinsOk');if(el)el.value=Math.max(0,(parseInt(el.value)||0)+delta);}
 function turnoCamara(tipo){const inp=document.getElementById('turnoFoto'+tipo);if(!inp)return;inp.setAttribute('capture','camera');inp.click();}
@@ -1898,4 +1977,61 @@ function turnoReset(){['turnoSel','turnoSaliente','turnoEntrante','turnoIncidenc
 
 </script>
 </body>
-</html>
+</html>function buscarPOEnCache(poNumber) {
+  // Leer de RAM — instantáneo, igual que buscarEnCacheEntradas
+  if (!_poIndexData || !_poIndexData.rows || !_poIndexData.rows.length) return null;
+
+  // Reconstruir índice de columnas solo si cambió
+  if (_poCacheKey !== _poIndexData.ts) {
+    _poCacheIdx = _buildPOCacheIndex(_poIndexData);
+    _poCacheKey = _poIndexData.ts;
+  }
+  const iC = _poCacheIdx;
+  const poClean = poNumber.trim().toUpperCase();
+
+  const matches = _poIndexData.rows.filter(r =>
+    r[iC.PO]?.toString().toUpperCase().trim() === poClean
+  );
+  if (!matches.length) return null;
+
+  const seen = new Set();
+  const items = [];
+  matches.forEach(r => {
+    const k = `${r[iC.PR]}||${r[iC.CODE]}`;
+    if (!seen.has(k)) {
+      seen.add(k);
+      items.push({
+        pr:          r[iC.PR]?.toString()    || '',
+        user:        r[iC.USER]?.toString()  || '',
+        code:        r[iC.CODE]?.toString()  || '',
+        description: r[iC.DESC]?.toString()  || '',
+        qty:         Number(r[iC.QTY])       || 0,
+        originalQty: Number(r[iC.QTY])       || 0,
+        uom:         r[iC.UOM]?.toString()   || '',
+        unitPrice:   Number(r[iC.PRICE])     || 0,
+        currency:    r[iC.CURR]?.toString()  || 'MXN',
+        buyer:       r[iC.BUYER]?.toString() || '',
+        buyerAsignado: r[iC.BUYER]?.toString() || '',
+        supplier:    r[iC.VENDOR]?.toString()|| '',
+        po:          r[iC.PO]?.toString()    || poClean
+      });
+    }
+  });
+  if (!items.length) return null;
+
+  // elaboradoPor del historial de entradas (caché local)
+  const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
+  const elaboradoPorSet = new Set();
+  if (cacheE && cacheE.rows) {
+    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
+  }
+
+  return {
+    success: true, items,
+    buyer:    items[0]?.buyer    || '',
+    supplier: items[0]?.supplier || '',
+    currency: items[0]?.currency || 'MXN',
+    elaboradoPorOpciones: [...elaboradoPorSet],
+    fromCache: true
+  };
+}
