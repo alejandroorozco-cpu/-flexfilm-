@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -870,6 +871,32 @@ async function forceRefreshCache() {
 }
 
 // ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
+async function _preloadEntradas() {
+  const cached = cacheGet(CACHE_KEYS.ENTRADAS);
+  if (cached) { setCacheStatus('Entradas', 'ok'); return; }
+  setCacheStatus('Entradas', 'loading');
+  try {
+    const res = await api('getCacheEntradas', {});
+    if (res && res.success && res.rows) {
+      cacheSet(CACHE_KEYS.ENTRADAS, { headers: res.headers, rows: res.rows, ts: Date.now() });
+      setCacheStatus('Entradas', 'ok');
+    } else { setCacheStatus('Entradas', 'stale'); }
+  } catch(e) { setCacheStatus('Entradas', 'stale'); }
+}
+
+async function _preloadInventario() {
+  const cached = cacheGet(CACHE_KEYS.INV);
+  if (cached) { setCacheStatus('Inv', 'ok'); return; }
+  setCacheStatus('Inv', 'loading');
+  try {
+    const res = await api('getCacheInventario', {});
+    if (res && res.success && res.rows) {
+      cacheSet(CACHE_KEYS.INV, { rows: res.rows, ts: Date.now() });
+      setCacheStatus('Inv', 'ok');
+    } else { setCacheStatus('Inv', 'stale'); }
+  } catch(e) { setCacheStatus('Inv', 'stale'); }
+}
+
 async function _preloadPOIndex() {
   // 1. Si ya está en RAM — instantáneo
   if (_poIndexData && _poIndexData.rows && _poIndexData.rows.length > 0) {
@@ -2009,3 +2036,4 @@ function turnoReset(){['turnoSel','turnoSaliente','turnoEntrante','turnoIncidenc
     fromCache: true
   };
 }
+
