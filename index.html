@@ -12,6 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
   <style>
     :root {
@@ -1229,6 +1230,7 @@ function truncLines(text, maxChars, maxLines) {
   return lines.length ? lines : [''];
 }
 
+// QR generico
 function generateQRDataURL(text) {
   return new Promise(resolve => {
     const div = document.createElement('div');
@@ -1243,6 +1245,21 @@ function generateQRDataURL(text) {
       }, 120);
     } catch(e) { document.body.removeChild(div); resolve(null); }
   });
+}
+// QR de inventario - apunta a consulta de stock
+function generateStockQRDataURL(code) {
+  return generateQRDataURL(GAS_URL + '?stock=' + encodeURIComponent(code));
+}
+// Codigo de barras Code128
+function generateBarcodeDataURL(code, targetW, targetH) {
+  try {
+    const cv = document.createElement('canvas');
+    JsBarcode(cv, code, { format:'CODE128', width:2, height:Math.round(targetH*0.72), displayValue:true, fontSize:Math.max(10,Math.round(targetH*0.20)), margin:4, background:'#ffffff', lineColor:'#000000' });
+    const out = document.createElement('canvas');
+    out.width = targetW; out.height = Math.round(cv.height*(targetW/cv.width));
+    out.getContext('2d').drawImage(cv,0,0,out.width,out.height);
+    return out.toDataURL('image/png');
+  } catch(e) { console.warn('Barcode error:',e); return null; }
 }
 
 function fitFs(ctx, text, maxW, maxSize, bold) {
@@ -1261,14 +1278,23 @@ function fmtLabelDate(raw) {
   return `${String(d.getDate()).padStart(2,'0')}/${MESES[d.getMonth()]}/${d.getFullYear()}`;
 }
 
-function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars) {
+function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrImg, barcodeImg) {
+  // qrImg      = QR del código (ya no se usa en el layout central, se mantiene por compatibilidad)
+  // stockQrImg = QR que apunta a ?stock=CODE (va a la izquierda)
+  // barcodeImg = código de barras Code128 (zona inferior derecha)
   descMaxChars = descMaxChars || 80;
   ctx.save();
   ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
   const pad = w*0.035, iw = w-pad*2, cx = x+w/2;
-  const zh = { hdr:0.16, div:0.015, po:0.09, rcv:0.09, usr:0.09, loc:0.09, cod:0.11, qr:0.26, dsc:0.145 };
+
+  // ── Proporciones de zonas superiores (sin zona QR central) ──
+  // hdr=16%, po=10%, rcv=10%, usr=10%, loc=10%, cod=14%, bot=40%
+  // La zona bot se divide en: izquierda QR stock | derecha (barcode+desc)
+  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.14, bot:0.40 };
   let zy = y; const zs = {};
-  for (const k of ['hdr','div','po','rcv','usr','loc','cod','qr','dsc']) { zs[k] = zy; zy += zh[k]*h; }
+  for (const k of ['hdr','po','rcv','usr','loc','cod','bot']) { zs[k] = zy; zy += zh[k]*h; }
+
+  // ── HEADER ──────────────────────────────────────────────────
   const hh = zh.hdr*h, titleStr = 'FLEX AMERICAS';
   const titleFs = fitFs(ctx, titleStr, iw*0.68, hh*0.68, true);
   ctx.font = `bold ${titleFs}px Helvetica,Arial,sans-serif`;
@@ -1276,12 +1302,19 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars) {
   const logoSz = Math.min(hh*0.80, titleFs*1.05), gap = logoSz*0.28;
   const blockW = logoSz+gap+titleW, hMidY = zs.hdr+hh/2;
   if (logoImg) { try { ctx.drawImage(logoImg, cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz); } catch(e) {} }
-  else { ctx.fillStyle='#1e3c72'; ctx.fillRect(cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz); ctx.fillStyle='#fff'; const lfs=Math.max(logoSz*0.3,6); ctx.font=`bold ${lfs}px Helvetica,Arial,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('FLEX',cx-blockW/2+logoSz/2,hMidY); ctx.fillStyle='#000'; }
+  else {
+    ctx.fillStyle='#1e3c72'; ctx.fillRect(cx-blockW/2, hMidY-logoSz/2, logoSz, logoSz);
+    ctx.fillStyle='#fff'; const lfs=Math.max(logoSz*0.3,6);
+    ctx.font=`bold ${lfs}px Helvetica,Arial,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('FLEX', cx-blockW/2+logoSz/2, hMidY); ctx.fillStyle='#000';
+  }
   ctx.fillStyle='#000'; ctx.textAlign='left'; ctx.textBaseline='middle';
   ctx.font = `bold ${titleFs}px Helvetica,Arial,sans-serif`;
   ctx.fillText(titleStr, cx-blockW/2+logoSz+gap, hMidY);
+
+  // ── FILAS DE INFO ────────────────────────────────────────────
   function row(text, zone, bold2, underline) {
-    const rh=zh[zone]*h, fs=fitFs(ctx,text,iw,rh*0.70,bold2);
+    const rh=zh[zone]*h, fs=fitFs(ctx,text,iw,rh*0.72,bold2);
     ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
     ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
     const ry = zs[zone]+rh/2; ctx.fillText(text,cx,ry);
@@ -1292,16 +1325,52 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars) {
   row(`USER: ${item.user||item.elaboradoPor||currentUser?.name||''}`, 'usr', false, false);
   row(`LOCATION: ${item.ubicacion||item.location||''}`, 'loc', true, true);
   row(item.code||'', 'cod', true, false);
-  const qh = zh.qr*h, qrSz = Math.min(qh*0.88, iw*0.55);
-  if (qrImg) ctx.drawImage(qrImg, cx-qrSz/2, zs.qr+(qh-qrSz)/2, qrSz, qrSz);
-  const dh = zh.dsc*h, descLines = truncLines(item.description||'', descMaxChars, 2);
+
+  // ── ZONA INFERIOR ────────────────────────────────────────────
+  // Línea divisora sutil
+  const botY  = zs.bot;
+  const botH  = zh.bot*h;
+  ctx.beginPath(); ctx.moveTo(x+pad, botY); ctx.lineTo(x+w-pad, botY);
+  ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5; ctx.setLineDash([4,4]); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Ancho izquierdo para QR = 28% del ancho total de la etiqueta
+  const leftW  = w * 0.28;
+  const rightW = w - leftW;
+  const rightX = x + leftW;
+
+  // ── BARCODE (zona derecha, parte superior) ───────────────────
+  const bcH  = botH * 0.55;   // 55% de la zona bot para el barcode
+  const bcW  = rightW - pad;
+  const bcX  = rightX;
+  const bcY  = botY + botH * 0.04;
+
+  if (barcodeImg) {
+    const bcImg = new Image(); bcImg.src = barcodeImg;
+    try { ctx.drawImage(bcImg, bcX, bcY, bcW, bcH); } catch(e) {}
+  }
+
+  // ── DESCRIPCIÓN (zona derecha, parte inferior) ───────────────
+  const descY = botY + bcH + botH * 0.06;
+  const descH = botH - bcH - botH * 0.06;
+  const descLines = truncLines(item.description||'', descMaxChars, 2);
   const widest = descLines.reduce((a,b) => a.length>b.length?a:b, 'x');
-  let dfs = fitFs(ctx, widest, iw, dh*0.36, false);
+  const descCx = rightX + rightW/2 - pad/2;
+  let dfs = fitFs(ctx, widest, rightW - pad, descH*0.42, false);
   ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
   const dlh = dfs*1.32, totalDH = descLines.length*dlh;
-  let dy = zs.dsc+(dh-totalDH)/2+dfs*0.6;
+  let dy = descY + (descH-totalDH)/2 + dfs*0.6;
   ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
-  descLines.forEach(l => { ctx.fillText(l,cx,dy); dy+=dlh; });
+  descLines.forEach(l => { ctx.fillText(l, descCx, dy); dy+=dlh; });
+
+  // ── QR STOCK (zona izquierda, centrado verticalmente en botH) ─
+  const qrSz = Math.min(leftW - pad*2, botH * 0.80);
+  const qrX  = x + pad + (leftW - pad*2 - qrSz)/2;
+  const qrY  = botY + (botH - qrSz)/2;
+  if (stockQrImg) {
+    try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e) {}
+  }
+
   ctx.restore();
 }
 
@@ -1347,12 +1416,16 @@ async function generatePDFInternal(data, shouldReset, btnId) {
         const cv = document.createElement('canvas'); cv.width=Math.round(PW*DPI); cv.height=Math.round(PH*DPI);
         const ctx = cv.getContext('2d');
         ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
-        const qrText = it.code||it.description||'';
-        const qrDataURL = await generateQRDataURL(qrText);
-        const qrImg = qrDataURL ? await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=qrDataURL;}) : null;
+        // QR stock (apunta a ?stock=CODE) + barcode Code128
+        const stockQrDataURL = it.code ? await generateStockQRDataURL(it.code) : null;
+        const stockQrImg = stockQrDataURL ? await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=stockQrDataURL;}) : null;
+        // Barcode: ancho = 72% del ancho de etiqueta en px, alto proporcional a 40% del alto
+        const bcTargetW = Math.round(labelW * DPI * 0.70);
+        const bcTargetH = Math.round(labelH * DPI * 0.40 * 0.55);
+        const barcodeDataURL = it.code ? generateBarcodeDataURL(it.code, bcTargetW, bcTargetH) : null;
         for (let s=0;s<slotsPerPage;s++) {
           const lx=MG*DPI, ly=(MG+(s*(labelH+gapMM)))*DPI;
-          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,qrImg,logoImg,maxChars);
+          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeDataURL);
         }
         const imgData = cv.toDataURL('image/jpeg',0.92);
         doc.addImage(imgData,'JPEG',0,0,PW,PH);
