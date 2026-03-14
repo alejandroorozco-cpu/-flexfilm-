@@ -864,8 +864,41 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyO3ZSmXw7nqq7GeWmTMlCb
 //  CACHE CLIENTE
 // ══════════════════════════════════════════════════════════
 const CACHE_TTL_MS = 8 * 60 * 60 * 1000;
-const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache', PO: 'ffErp_poIndex' };
+const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache', PO: 'ffErp_poIndex',MAPEO: 'ffErp_mapeoUsuarios' };
+let _mapeoUsuarios = null; // { usuarios:{}, compradores:{}, elaboradoPor:[] }
 
+  async function _preloadMapeoUsuarios() {
+  // 1. RAM
+  if (_mapeoUsuarios) return;
+  // 2. localStorage
+  const cached = cacheGet(CACHE_KEYS.MAPEO);
+  if (cached) { _mapeoUsuarios = cached; return; }
+  // 3. Servidor
+  try {
+    const res = await api('getCacheMapeoUsuarios', {});
+    if (res && res.success) {
+      _mapeoUsuarios = {
+        usuarios:    res.usuarios    || {},
+        compradores: res.compradores || {},
+        elaboradoPor: res.elaboradoPor || []
+      };
+      cacheSet(CACHE_KEYS.MAPEO, _mapeoUsuarios);
+    }
+  } catch(e) { console.warn('Mapeo usuarios no disponible:', e); }
+}
+  function _aplicarMapeoCliente(items) {
+  if (!_mapeoUsuarios) return items;
+  const { usuarios, compradores } = _mapeoUsuarios;
+  return items.map(it => {
+    const uKey = it.user?.toString().trim().toUpperCase()  || '';
+    const bKey = it.buyer?.toString().trim().toUpperCase() || '';
+    return {
+      ...it,
+      user:          usuarios[uKey]    || it.user,
+      buyerAsignado: compradores[bKey] || it.buyer
+    };
+  });
+}
 function cacheSet(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
 }
@@ -1014,10 +1047,15 @@ function buscarPOEnCache(poNumber) {
       });
     }
   });
-  if (!items.length) return null;
+if (!items.length) return null;
+
+  // elaboradoPor del historial de entradas (caché local)
   const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
   const elaboradoPorSet = new Set();
-  if (cacheE?.rows) cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
+  if (cacheE && cacheE.rows) {
+    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
+  }
+
   return {
     success: true, items,
     buyer:    items[0]?.buyer    || '',
@@ -1026,7 +1064,6 @@ function buscarPOEnCache(poNumber) {
     elaboradoPorOpciones: [...elaboradoPorSet],
     fromCache: true
   };
-}
 
 // FIX 3: buscar PO en caché también para GIN
 function buscarGINPOEnCache(poNumber) {
