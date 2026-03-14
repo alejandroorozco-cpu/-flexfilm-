@@ -858,28 +858,58 @@ function preloadCaches() {
 // ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
 async function _preloadPOIndex() {
   const cached = cacheGet(CACHE_KEYS.PO);
-  if (cached) { setCacheStatus('PO', 'ok'); return; }
+  if (cached) {
+    _poCacheIdx = null; _poCacheKey = null; // reset para que se reconstruya con nuevo caché
+    setCacheStatus('PO', 'ok');
+    return;
+  }
   setCacheStatus('PO', 'loading');
   try {
     const res = await api('getCachePOIndex', {});
     if (res && res.success && res.rows) {
-      cacheSet(CACHE_KEYS.PO, { headers: res.headers, rows: res.rows, ts: Date.now() });
+      const payload = { headers: res.headers, rows: res.rows, ts: Date.now() };
+      cacheSet(CACHE_KEYS.PO, payload);
+      _poCacheIdx = null; _poCacheKey = null; // forzar reconstrucción del índice
       setCacheStatus('PO', 'ok');
     } else { setCacheStatus('PO', 'stale'); }
   } catch(e) { setCacheStatus('PO', 'stale'); }
 }
 
 // Buscar PO en caché local — devuelve objeto igual a lo que devolvía getDataByPO
+// Índice precalculado para búsquedas instantáneas (se calcula una vez por sesión)
+let _poCacheIdx = null;
+let _poCacheKey  = null;   // TTL check
+
+function _buildPOCacheIndex(cacheP) {
+  const h = cacheP.headers;
+  return {
+    PR:     h.indexOf('REQ_CANCELL'),
+    USER:   h.indexOf('REQUESTOR'),
+    CODE:   h.indexOf('ITEM_CODE'),
+    DESC:   h.indexOf('DESCRIPTION'),
+    PO:     h.indexOf('PO_NUMBER'),
+    BUYER:  h.indexOf('BUYER_NAME'),
+    VENDOR: h.indexOf('VENDOR_NAME'),
+    QTY:    h.indexOf('QUANTITY'),
+    UOM:    h.indexOf('PO_UNITS'),
+    CURR:   h.indexOf('POCURR_CODE'),
+    PRICE:  h.indexOf('UNIT_PRICE'),
+    ORG:    h.indexOf('ORG_CODE')
+  };
+}
+
 function buscarPOEnCache(poNumber) {
   const cacheP = cacheGet(CACHE_KEYS.PO);
   if (!cacheP || !cacheP.rows || !cacheP.headers) return null;
+
+  // Reconstruir índice solo si el caché cambió (nuevo timestamp)
+  if (_poCacheKey !== cacheP.ts) {
+    _poCacheIdx  = _buildPOCacheIndex(cacheP);
+    _poCacheKey  = cacheP.ts;
+  }
+  const iC = _poCacheIdx;
   const poClean = poNumber.trim().toUpperCase();
-  const h = cacheP.headers;
-  // Índices de las columnas que necesitamos
-  const iC  = { PR:h.indexOf('REQ_CANCELL'), USER:h.indexOf('REQUESTOR'), CODE:h.indexOf('ITEM_CODE'),
-                 DESC:h.indexOf('DESCRIPTION'), PO:h.indexOf('PO_NUMBER'), BUYER:h.indexOf('BUYER_NAME'),
-                 VENDOR:h.indexOf('VENDOR_NAME'), QTY:h.indexOf('QUANTITY'), UOM:h.indexOf('PO_UNITS'),
-                 CURR:h.indexOf('POCURR_CODE'), PRICE:h.indexOf('UNIT_PRICE'), ORG:h.indexOf('ORG_CODE') };
+
   const matches = cacheP.rows.filter(r => r[iC.PO]?.toString().toUpperCase().trim() === poClean);
   if (!matches.length) return null;
   // Deduplicar por PR+CODE igual que el servidor
@@ -1346,8 +1376,9 @@ function generateQRDataURL(text) {
 function generateStockQRDataURL(code) {
   return generateQRDataURL(GAS_URL + '?stock=' + encodeURIComponent(code));
 }
-// Codigo de barras Code128 — canvas adjuntado al DOM para evitar fallo en Safari/móvil
-function generateBarcodeDataURL(code, targetW, targetH) {
+// Codigo de barras Code128 — devuelve HTMLImageElement ya cargado (no dataURL)
+// displayValue:false — sin texto debajo, el código ya aparece arriba en la etiqueta
+function generateBarcodeImage(code, targetW, targetH) {
   return new Promise(resolve => {
     try {
       const cv = document.createElement('canvas');
@@ -1355,31 +1386,35 @@ function generateBarcodeDataURL(code, targetW, targetH) {
       document.body.appendChild(cv);
       JsBarcode(cv, code, {
         format:       'CODE128',
-        width:        2.2,
-        height:       Math.round(targetH * 0.65),
-        displayValue: true,
-        fontSize:     Math.max(9, Math.round(targetH * 0.16)),
-        margin:       3,
+        width:        2.5,
+        height:       Math.round(targetH * 0.85),
+        displayValue: false,
+        margin:       2,
         background:   '#ffffff',
         lineColor:    '#000000'
       });
-      // Pequeño timeout para garantizar render
       setTimeout(() => {
         try {
+          // Escalar al ancho exacto deseado manteniendo proporciones
           const out = document.createElement('canvas');
           out.width  = targetW;
           out.height = Math.round(cv.height * (targetW / cv.width));
           out.getContext('2d').drawImage(cv, 0, 0, out.width, out.height);
           document.body.removeChild(cv);
-          resolve(out.toDataURL('image/png'));
+          // Pre-cargar como Image para que drawImage funcione síncrono en canvas
+          const img = new Image();
+          img.onload  = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = out.toDataURL('image/png');
         } catch(e2) {
           try { document.body.removeChild(cv); } catch(e3) {}
           resolve(null);
         }
-      }, 80);
+      }, 100);
     } catch(e) { resolve(null); }
   });
 }
+
 function fitFs(ctx, text, maxW, maxSize, bold) {
   let fs = maxSize;
   while (fs >= 5) { ctx.font = `${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`; if (ctx.measureText(text).width <= maxW) return fs; fs -= 0.5; }
@@ -1397,6 +1432,8 @@ function fmtLabelDate(raw) {
 }
 
 function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrImg, barcodeImg) {
+  // barcodeImg = HTMLImageElement ya cargado (o null)
+  // stockQrImg = HTMLImageElement QR de stock (o null)
   descMaxChars = descMaxChars || 80;
   ctx.save();
   ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -1444,52 +1481,59 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   const botY = zs.bot;
   const botH = zh.bot * h;
 
-  // Línea divisora sutil
+  // línea divisora sutil
   ctx.beginPath(); ctx.moveTo(x+pad, botY); ctx.lineTo(x+w-pad, botY);
   ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5; ctx.setLineDash([4,4]); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Columna izquierda para QR = 28% del ancho
-  const leftW  = w * 0.28;
-  // Columna derecha = resto, con pequeño padding interior
-  const rightX = x + leftW;
-  const rightW = w - leftW - pad;
+  // Columna izquierda (QR) = 26% del ancho total
+  const leftW = w * 0.26;
+  // Columna derecha (barcode + desc) — empieza después del QR con un gap mínimo
+  const gapLR = pad * 0.5;
+  const rightX = x + leftW + gapLR;
+  const rightW = w - leftW - gapLR - pad;
 
   // ── BARCODE ──────────────────────────────────────────────
-  // Alto: 52% del botH — más chico en altura
-  // Ancho: ocupa todo el rightW — bien estirado
-  // Posición Y: empieza un 4% del botH desde la línea
-  const bcH  = botH * 0.52;
-  const bcW  = rightW;
-  const bcX  = rightX;
-  const bcY  = botY + botH * 0.04;
+  // Alto fijo: 46% del botH — armonioso sin ser dominante
+  // Ancho: todo rightW — estirado para armonía
+  // Y: pequeño margen desde la línea divisora
+  const bcMarginTop = botH * 0.05;
+  const bcH = botH * 0.46;
+  const bcW = rightW;
+  const bcX = rightX;
+  const bcY = botY + bcMarginTop;
 
+  // barcodeImg ya es HTMLImageElement precargado — drawImage síncrono
   if (barcodeImg) {
-    const bcImgEl = new Image();
-    bcImgEl.src = barcodeImg;
-    try { ctx.drawImage(bcImgEl, bcX, bcY, bcW, bcH); } catch(e) {}
+    try { ctx.drawImage(barcodeImg, bcX, bcY, bcW, bcH); } catch(e) {}
   }
 
   // ── DESCRIPCIÓN ──────────────────────────────────────────
-  const descY = bcY + bcH + botH * 0.03;
-  const descH = botH - (bcY - botY) - bcH - botH * 0.03;
+  // Empieza justo debajo del barcode con pequeño gap
+  // Puede usar 2 líneas sin límite de tamaño de letra (crece hasta llenar el espacio)
+  // No invade el barcode ni el QR porque están por encima
+  const descGap = botH * 0.03;
+  const descY0  = bcY + bcH + descGap;
+  const descH   = botY + botH - descY0 - pad * 0.3;  // hasta el fondo de la etiqueta
   const descLines = truncLines(item.description||'', descMaxChars, 2);
   const widest = descLines.reduce((a,b) => a.length>b.length?a:b, 'x');
   const descCx = rightX + rightW/2;
-  let dfs = fitFs(ctx, widest, rightW, descH*0.45, false);
+  // Font: crece hasta llenar descH / nLines — sin restricción de tamaño mínimo
+  let dfs = fitFs(ctx, widest, rightW, descH / descLines.length * 0.78, false);
   ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
-  const dlh = dfs*1.32, totalDH = descLines.length*dlh;
-  let dy = descY + (descH-totalDH)/2 + dfs*0.6;
+  const dlh = dfs * 1.28;
+  const totalDH = descLines.length * dlh;
+  let dy = descY0 + (descH - totalDH) / 2 + dfs * 0.75;
   ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
-  descLines.forEach(l => { ctx.fillText(l, descCx, dy); dy+=dlh; });
+  descLines.forEach(l => { ctx.fillText(l, descCx, dy); dy += dlh; });
 
   // ── QR STOCK ─────────────────────────────────────────────
-  // Arriba: alineado con el inicio del barcode (bcY)
-  // Alto: ocupa desde bcY hasta el fondo del botH menos un pequeño margen
-  // Centrado horizontalmente en la columna izquierda
-  const qrSz = Math.min(leftW - pad*2, botH - (bcY - botY) - pad);
-  const qrX  = x + pad + (leftW - pad*2 - qrSz)/2;
-  const qrY  = bcY;  // alineado con la parte superior del barcode
+  // Alineado con bcY (parte superior del barcode)
+  // Tamaño: tan grande como quepa en leftW y en botH desde bcY
+  const qrMaxSz  = Math.min(leftW - pad, botH - bcMarginTop - pad);
+  const qrSz     = qrMaxSz;
+  const qrX      = x + pad * 0.5 + (leftW - pad - qrSz) / 2;
+  const qrY      = bcY;  // alineado con la parte superior del barcode
 
   if (stockQrImg) {
     try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e) {}
@@ -1544,12 +1588,13 @@ async function generatePDFInternal(data, shouldReset, btnId) {
         const stockQrDataURL = it.code ? await generateStockQRDataURL(it.code) : null;
         const stockQrImg = stockQrDataURL ? await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=stockQrDataURL;}) : null;
         // Barcode: ancho = 72% del ancho de etiqueta en px, alto proporcional a 40% del alto
-        const bcTargetW = Math.round(labelW * DPI * 0.68);
-        const bcTargetH = Math.round(labelH * DPI * 0.40 * 0.50);
-        const barcodeDataURL = it.code ? await generateBarcodeDataURL(it.code, bcTargetW, bcTargetH) : null;
+        // Barcode: Image precargada para drawImage síncrono
+        const bcTargetW = Math.round(labelW * DPI * 0.70);
+        const bcTargetH = Math.round(labelH * DPI * 0.22);
+        const barcodeImg = it.code ? await generateBarcodeImage(it.code, bcTargetW, bcTargetH) : null;
         for (let s=0;s<slotsPerPage;s++) {
           const lx=MG*DPI, ly=(MG+(s*(labelH+gapMM)))*DPI;
-          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeDataURL);
+          drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeImg);
         }
         const imgData = cv.toDataURL('image/jpeg',0.92);
         doc.addImage(imgData,'JPEG',0,0,PW,PH);
