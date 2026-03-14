@@ -923,7 +923,7 @@ function setCacheStatus(module, status) {
   el.textContent = (prefix[module] || module) + ': ' + (labels[status] || status);
 }
 
-function preloadCaches() { _preloadEntradas(); _preloadInventario(); _preloadPOIndex(); }
+function preloadCaches() { _preloadEntradas(); _preloadInventario(); _preloadPOIndex(); _preloadMapeoUsuarios(); }
 
 async function forceRefreshCache() {
   cacheClear(CACHE_KEYS.ENTRADAS); cacheClear(CACHE_KEYS.INV);
@@ -1049,19 +1049,26 @@ function buscarPOEnCache(poNumber) {
   });
 if (!items.length) return null;
 
-  // elaboradoPor del historial de entradas (caché local)
-  const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
-  const elaboradoPorSet = new Set();
-  if (cacheE && cacheE.rows) {
-    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
-  }
+  // ── Aplicar mapeo de nombres (igual que el servidor) ──────
+  const itemsMapped = _aplicarMapeoCliente(items);
+
+  // elaboradoPor: primero del mapeo, luego del historial de entradas
+  const elaboradoPorOpciones = (_mapeoUsuarios?.elaboradoPor?.length)
+    ? _mapeoUsuarios.elaboradoPor
+    : (() => {
+        const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
+        const set = new Set();
+        if (cacheE && cacheE.rows) cacheE.rows.forEach(r => { if (r[16]) set.add(r[16]); });
+        return [...set];
+      })();
 
   return {
-    success: true, items,
-    buyer:    items[0]?.buyer    || '',
-    supplier: items[0]?.supplier || '',
-    currency: items[0]?.currency || 'MXN',
-    elaboradoPorOpciones: [...elaboradoPorSet],
+    success: true,
+    items:    itemsMapped,
+    buyer:    itemsMapped[0]?.buyerAsignado || itemsMapped[0]?.buyer || '',
+    supplier: itemsMapped[0]?.supplier      || '',
+    currency: itemsMapped[0]?.currency      || 'MXN',
+    elaboradoPorOpciones,
     fromCache: true
   };
 
