@@ -240,6 +240,7 @@
       <div id="cacheStatusBar" style="margin-top:6px;font-size:.65rem;">
         <span id="cacheEntradas" class="cache-status cache-loading">Entradas…</span>
         <span id="cacheInv" class="cache-status cache-loading">Inv…</span>
+        <span id="cachePO" class="cache-status cache-loading">PO…</span>
         <button onclick="forceRefreshCache()" style="background:none;border:none;color:#64748b;font-size:.65rem;cursor:pointer;margin-left:4px;" title="Actualizar caché"><i class="fas fa-sync"></i></button>
       </div>
     </div>
@@ -813,7 +814,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyO3ZSmXw7nqq7GeWmTMlCb
 //  + versión persistente en localStorage con TTL de 8 horas
 // ══════════════════════════════════════════════════════════
 const CACHE_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
-const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache' };
+const CACHE_KEYS = { ENTRADAS: 'ffErp_entradasCache', INV: 'ffErp_invCache', PO: 'ffErp_poIndex' };
 
 function cacheSet(key, data) {
   try {
@@ -851,6 +852,75 @@ function setCacheStatus(module, status) {
 function preloadCaches() {
   _preloadEntradas();
   _preloadInventario();
+  _preloadPOIndex();
+}
+
+// ── Precarga índice PO (PR PO REPORT filtrado) ──────────────
+async function _preloadPOIndex() {
+  const cached = cacheGet(CACHE_KEYS.PO);
+  if (cached) { setCacheStatus('PO', 'ok'); return; }
+  setCacheStatus('PO', 'loading');
+  try {
+    const res = await api('getCachePOIndex', {});
+    if (res && res.success && res.rows) {
+      cacheSet(CACHE_KEYS.PO, { headers: res.headers, rows: res.rows, ts: Date.now() });
+      setCacheStatus('PO', 'ok');
+    } else { setCacheStatus('PO', 'stale'); }
+  } catch(e) { setCacheStatus('PO', 'stale'); }
+}
+
+// Buscar PO en caché local — devuelve objeto igual a lo que devolvía getDataByPO
+function buscarPOEnCache(poNumber) {
+  const cacheP = cacheGet(CACHE_KEYS.PO);
+  if (!cacheP || !cacheP.rows || !cacheP.headers) return null;
+  const poClean = poNumber.trim().toUpperCase();
+  const h = cacheP.headers;
+  // Índices de las columnas que necesitamos
+  const iC  = { PR:h.indexOf('REQ_CANCELL'), USER:h.indexOf('REQUESTOR'), CODE:h.indexOf('ITEM_CODE'),
+                 DESC:h.indexOf('DESCRIPTION'), PO:h.indexOf('PO_NUMBER'), BUYER:h.indexOf('BUYER_NAME'),
+                 VENDOR:h.indexOf('VENDOR_NAME'), QTY:h.indexOf('QUANTITY'), UOM:h.indexOf('PO_UNITS'),
+                 CURR:h.indexOf('POCURR_CODE'), PRICE:h.indexOf('UNIT_PRICE'), ORG:h.indexOf('ORG_CODE') };
+  const matches = cacheP.rows.filter(r => r[iC.PO]?.toString().toUpperCase().trim() === poClean);
+  if (!matches.length) return null;
+  // Deduplicar por PR+CODE igual que el servidor
+  const seen = new Set();
+  const items = [];
+  matches.forEach(r => {
+    const k = `${r[iC.PR]}||${r[iC.CODE]}`;
+    if (!seen.has(k)) {
+      seen.add(k);
+      items.push({
+        pr:          r[iC.PR]  || '',
+        user:        r[iC.USER]|| '',
+        code:        r[iC.CODE]|| '',
+        description: r[iC.DESC]|| '',
+        qty:         Number(r[iC.QTY])  || 0,
+        originalQty: Number(r[iC.QTY])  || 0,
+        uom:         r[iC.UOM] || '',
+        unitPrice:   Number(r[iC.PRICE])|| 0,
+        currency:    r[iC.CURR]|| 'MXN',
+        buyer:       r[iC.BUYER]  || '',
+        buyerAsignado: r[iC.BUYER] || '',
+        supplier:    r[iC.VENDOR] || '',
+        po:          r[iC.PO]  || poClean
+      });
+    }
+  });
+  if (!items.length) return null;
+  // Obtener elaboradoPor del caché de usuarios si existe
+  const cacheE = cacheGet(CACHE_KEYS.ENTRADAS);
+  const elaboradoPorSet = new Set();
+  if (cacheE && cacheE.rows) {
+    cacheE.rows.forEach(r => { if (r[16]) elaboradoPorSet.add(r[16]); });
+  }
+  return {
+    success: true, items,
+    buyer:    items[0]?.buyer   || '',
+    supplier: items[0]?.supplier|| '',
+    currency: items[0]?.currency|| 'MXN',
+    elaboradoPorOpciones: [...elaboradoPorSet],
+    fromCache: true
+  };
 }
 
 async function _preloadEntradas() {
@@ -884,10 +954,12 @@ async function _preloadInventario() {
 async function forceRefreshCache() {
   cacheClear(CACHE_KEYS.ENTRADAS);
   cacheClear(CACHE_KEYS.INV);
+  cacheClear(CACHE_KEYS.PO);
   setCacheStatus('Entradas', 'loading');
   setCacheStatus('Inv', 'loading');
+  setCacheStatus('PO', 'loading');
   toast('Actualizando caché…', 'info');
-  await Promise.all([_preloadEntradas(), _preloadInventario()]);
+  await Promise.all([_preloadEntradas(), _preloadInventario(), _preloadPOIndex()]);
   toast('Caché actualizada ✓');
 }
 
@@ -1060,22 +1132,46 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 function searchPO() {
   const po = document.getElementById('poInput').value.trim();
   if (!po) return toast('Ingrese número de PO','error');
+
+  // Intentar caché local primero
+  const localResult = buscarPOEnCache(po);
+  if (localResult) {
+    _applyPOResult(localResult, po);
+    toast(`${localResult.items.length} items — caché local`, 'info');
+    // Actualizar mapeador de elaboradoPor desde servidor en background si no hay opciones
+    if (!localResult.elaboradoPorOpciones?.length) {
+      api('getElaboradoPorOpciones', {}).then(r => {
+        if (r?.opciones?.length) {
+          elaboradoPorOpciones = r.opciones;
+          const sel = document.getElementById('elaboradoPorSelect');
+          if (sel) sel.innerHTML = '<option value="">Seleccione…</option>' + r.opciones.map(x => `<option>${x}</option>`).join('');
+        }
+      }).catch(()=>{});
+    }
+    return;
+  }
+
+  // Sin caché: ir al servidor
   loadBtn('btnSearchPO', true);
   api('getDataByPO', { poNumber: po }).then(res => {
     loadBtn('btnSearchPO', false);
     if (!res.items?.length) return toast('PO no encontrada','error');
-    curData = res.items; curPO = po; curBuyer = res.buyer; curSupplier = res.supplier;
-    document.getElementById('buyerInput').value = res.buyer;
-    document.getElementById('supplierInput').value = res.supplier;
-    document.getElementById('currencyDisp').textContent = res.currency;
-    if (res.elaboradoPorOpciones) elaboradoPorOpciones = res.elaboradoPorOpciones;
-    const sel = document.getElementById('elaboradoPorSelect');
-    sel.innerHTML = '<option value="">Seleccione…</option>' + res.elaboradoPorOpciones.map(x => `<option>${x}</option>`).join('');
-    stagedPhotos = {};
-    renderEntradas();
-    document.getElementById('btnPrint').disabled = false;
+    _applyPOResult(res, po);
     toast(`${res.items.length} items encontrados`);
   }).catch(e => { loadBtn('btnSearchPO', false); toast(e.message,'error'); });
+}
+
+function _applyPOResult(res, po) {
+  curData = res.items; curPO = po; curBuyer = res.buyer; curSupplier = res.supplier;
+  document.getElementById('buyerInput').value = res.buyer;
+  document.getElementById('supplierInput').value = res.supplier;
+  document.getElementById('currencyDisp').textContent = res.currency;
+  if (res.elaboradoPorOpciones?.length) elaboradoPorOpciones = res.elaboradoPorOpciones;
+  const sel = document.getElementById('elaboradoPorSelect');
+  sel.innerHTML = '<option value="">Seleccione…</option>' + (elaboradoPorOpciones||[]).map(x => `<option>${x}</option>`).join('');
+  stagedPhotos = {};
+  renderEntradas();
+  document.getElementById('btnPrint').disabled = false;
 }
 
 function renderEntradas() {
@@ -1250,18 +1346,40 @@ function generateQRDataURL(text) {
 function generateStockQRDataURL(code) {
   return generateQRDataURL(GAS_URL + '?stock=' + encodeURIComponent(code));
 }
-// Codigo de barras Code128
+// Codigo de barras Code128 — canvas adjuntado al DOM para evitar fallo en Safari/móvil
 function generateBarcodeDataURL(code, targetW, targetH) {
-  try {
-    const cv = document.createElement('canvas');
-    JsBarcode(cv, code, { format:'CODE128', width:2, height:Math.round(targetH*0.72), displayValue:true, fontSize:Math.max(10,Math.round(targetH*0.20)), margin:4, background:'#ffffff', lineColor:'#000000' });
-    const out = document.createElement('canvas');
-    out.width = targetW; out.height = Math.round(cv.height*(targetW/cv.width));
-    out.getContext('2d').drawImage(cv,0,0,out.width,out.height);
-    return out.toDataURL('image/png');
-  } catch(e) { console.warn('Barcode error:',e); return null; }
+  return new Promise(resolve => {
+    try {
+      const cv = document.createElement('canvas');
+      cv.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+      document.body.appendChild(cv);
+      JsBarcode(cv, code, {
+        format:       'CODE128',
+        width:        2.2,
+        height:       Math.round(targetH * 0.65),
+        displayValue: true,
+        fontSize:     Math.max(9, Math.round(targetH * 0.16)),
+        margin:       3,
+        background:   '#ffffff',
+        lineColor:    '#000000'
+      });
+      // Pequeño timeout para garantizar render
+      setTimeout(() => {
+        try {
+          const out = document.createElement('canvas');
+          out.width  = targetW;
+          out.height = Math.round(cv.height * (targetW / cv.width));
+          out.getContext('2d').drawImage(cv, 0, 0, out.width, out.height);
+          document.body.removeChild(cv);
+          resolve(out.toDataURL('image/png'));
+        } catch(e2) {
+          try { document.body.removeChild(cv); } catch(e3) {}
+          resolve(null);
+        }
+      }, 80);
+    } catch(e) { resolve(null); }
+  });
 }
-
 function fitFs(ctx, text, maxW, maxSize, bold) {
   let fs = maxSize;
   while (fs >= 5) { ctx.font = `${bold?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`; if (ctx.measureText(text).width <= maxW) return fs; fs -= 0.5; }
@@ -1279,22 +1397,18 @@ function fmtLabelDate(raw) {
 }
 
 function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrImg, barcodeImg) {
-  // qrImg      = QR del código (ya no se usa en el layout central, se mantiene por compatibilidad)
-  // stockQrImg = QR que apunta a ?stock=CODE (va a la izquierda)
-  // barcodeImg = código de barras Code128 (zona inferior derecha)
   descMaxChars = descMaxChars || 80;
   ctx.save();
   ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
   const pad = w*0.035, iw = w-pad*2, cx = x+w/2;
 
-  // ── Proporciones de zonas superiores (sin zona QR central) ──
-  // hdr=16%, po=10%, rcv=10%, usr=10%, loc=10%, cod=14%, bot=40%
-  // La zona bot se divide en: izquierda QR stock | derecha (barcode+desc)
-  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.14, bot:0.40 };
+  // ── Zonas superiores ─────────────────────────────────────
+  // hdr=16%, po=10%, rcv=10%, usr=10%, loc=10%, cod=13%, bot=41%
+  const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.13, bot:0.41 };
   let zy = y; const zs = {};
   for (const k of ['hdr','po','rcv','usr','loc','cod','bot']) { zs[k] = zy; zy += zh[k]*h; }
 
-  // ── HEADER ──────────────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────
   const hh = zh.hdr*h, titleStr = 'FLEX AMERICAS';
   const titleFs = fitFs(ctx, titleStr, iw*0.68, hh*0.68, true);
   ctx.font = `bold ${titleFs}px Helvetica,Arial,sans-serif`;
@@ -1312,7 +1426,7 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   ctx.font = `bold ${titleFs}px Helvetica,Arial,sans-serif`;
   ctx.fillText(titleStr, cx-blockW/2+logoSz+gap, hMidY);
 
-  // ── FILAS DE INFO ────────────────────────────────────────────
+  // ── FILAS DE INFO ────────────────────────────────────────
   function row(text, zone, bold2, underline) {
     const rh=zh[zone]*h, fs=fitFs(ctx,text,iw,rh*0.72,bold2);
     ctx.font=`${bold2?'bold ':' '}${fs}px Helvetica,Arial,sans-serif`;
@@ -1326,47 +1440,57 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   row(`LOCATION: ${item.ubicacion||item.location||''}`, 'loc', true, true);
   row(item.code||'', 'cod', true, false);
 
-  // ── ZONA INFERIOR ────────────────────────────────────────────
+  // ── ZONA INFERIOR ────────────────────────────────────────
+  const botY = zs.bot;
+  const botH = zh.bot * h;
+
   // Línea divisora sutil
-  const botY  = zs.bot;
-  const botH  = zh.bot*h;
   ctx.beginPath(); ctx.moveTo(x+pad, botY); ctx.lineTo(x+w-pad, botY);
   ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5; ctx.setLineDash([4,4]); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Ancho izquierdo para QR = 28% del ancho total de la etiqueta
+  // Columna izquierda para QR = 28% del ancho
   const leftW  = w * 0.28;
-  const rightW = w - leftW;
+  // Columna derecha = resto, con pequeño padding interior
   const rightX = x + leftW;
+  const rightW = w - leftW - pad;
 
-  // ── BARCODE (zona derecha, parte superior) ───────────────────
-  const bcH  = botH * 0.55;   // 55% de la zona bot para el barcode
-  const bcW  = rightW - pad;
+  // ── BARCODE ──────────────────────────────────────────────
+  // Alto: 52% del botH — más chico en altura
+  // Ancho: ocupa todo el rightW — bien estirado
+  // Posición Y: empieza un 4% del botH desde la línea
+  const bcH  = botH * 0.52;
+  const bcW  = rightW;
   const bcX  = rightX;
   const bcY  = botY + botH * 0.04;
 
   if (barcodeImg) {
-    const bcImg = new Image(); bcImg.src = barcodeImg;
-    try { ctx.drawImage(bcImg, bcX, bcY, bcW, bcH); } catch(e) {}
+    const bcImgEl = new Image();
+    bcImgEl.src = barcodeImg;
+    try { ctx.drawImage(bcImgEl, bcX, bcY, bcW, bcH); } catch(e) {}
   }
 
-  // ── DESCRIPCIÓN (zona derecha, parte inferior) ───────────────
-  const descY = botY + bcH + botH * 0.06;
-  const descH = botH - bcH - botH * 0.06;
+  // ── DESCRIPCIÓN ──────────────────────────────────────────
+  const descY = bcY + bcH + botH * 0.03;
+  const descH = botH - (bcY - botY) - bcH - botH * 0.03;
   const descLines = truncLines(item.description||'', descMaxChars, 2);
   const widest = descLines.reduce((a,b) => a.length>b.length?a:b, 'x');
-  const descCx = rightX + rightW/2 - pad/2;
-  let dfs = fitFs(ctx, widest, rightW - pad, descH*0.42, false);
+  const descCx = rightX + rightW/2;
+  let dfs = fitFs(ctx, widest, rightW, descH*0.45, false);
   ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
   const dlh = dfs*1.32, totalDH = descLines.length*dlh;
   let dy = descY + (descH-totalDH)/2 + dfs*0.6;
   ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
   descLines.forEach(l => { ctx.fillText(l, descCx, dy); dy+=dlh; });
 
-  // ── QR STOCK (zona izquierda, centrado verticalmente en botH) ─
-  const qrSz = Math.min(leftW - pad*2, botH * 0.80);
+  // ── QR STOCK ─────────────────────────────────────────────
+  // Arriba: alineado con el inicio del barcode (bcY)
+  // Alto: ocupa desde bcY hasta el fondo del botH menos un pequeño margen
+  // Centrado horizontalmente en la columna izquierda
+  const qrSz = Math.min(leftW - pad*2, botH - (bcY - botY) - pad);
   const qrX  = x + pad + (leftW - pad*2 - qrSz)/2;
-  const qrY  = botY + (botH - qrSz)/2;
+  const qrY  = bcY;  // alineado con la parte superior del barcode
+
   if (stockQrImg) {
     try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e) {}
   }
@@ -1420,9 +1544,9 @@ async function generatePDFInternal(data, shouldReset, btnId) {
         const stockQrDataURL = it.code ? await generateStockQRDataURL(it.code) : null;
         const stockQrImg = stockQrDataURL ? await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=stockQrDataURL;}) : null;
         // Barcode: ancho = 72% del ancho de etiqueta en px, alto proporcional a 40% del alto
-        const bcTargetW = Math.round(labelW * DPI * 0.70);
-        const bcTargetH = Math.round(labelH * DPI * 0.40 * 0.55);
-        const barcodeDataURL = it.code ? generateBarcodeDataURL(it.code, bcTargetW, bcTargetH) : null;
+        const bcTargetW = Math.round(labelW * DPI * 0.68);
+        const bcTargetH = Math.round(labelH * DPI * 0.40 * 0.50);
+        const barcodeDataURL = it.code ? await generateBarcodeDataURL(it.code, bcTargetW, bcTargetH) : null;
         for (let s=0;s<slotsPerPage;s++) {
           const lx=MG*DPI, ly=(MG+(s*(labelH+gapMM)))*DPI;
           drawLabel(ctx,lx,ly,labelW*DPI,labelH*DPI,it,null,logoImg,maxChars,stockQrImg,barcodeDataURL);
