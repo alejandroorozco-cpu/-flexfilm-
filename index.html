@@ -1432,15 +1432,12 @@ function fmtLabelDate(raw) {
 }
 
 function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrImg, barcodeImg) {
-  // barcodeImg = HTMLImageElement ya cargado (o null)
-  // stockQrImg = HTMLImageElement QR de stock (o null)
   descMaxChars = descMaxChars || 80;
   ctx.save();
   ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
   const pad = w*0.035, iw = w-pad*2, cx = x+w/2;
 
   // ── Zonas superiores ─────────────────────────────────────
-  // hdr=16%, po=10%, rcv=10%, usr=10%, loc=10%, cod=13%, bot=41%
   const zh = { hdr:0.16, po:0.10, rcv:0.10, usr:0.10, loc:0.10, cod:0.13, bot:0.41 };
   let zy = y; const zs = {};
   for (const k of ['hdr','po','rcv','usr','loc','cod','bot']) { zs[k] = zy; zy += zh[k]*h; }
@@ -1481,59 +1478,70 @@ function drawLabel(ctx, x, y, w, h, item, qrImg, logoImg, descMaxChars, stockQrI
   const botY = zs.bot;
   const botH = zh.bot * h;
 
-  // línea divisora sutil
   ctx.beginPath(); ctx.moveTo(x+pad, botY); ctx.lineTo(x+w-pad, botY);
   ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5; ctx.setLineDash([4,4]); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Columna izquierda (QR) = 26% del ancho total
-  const leftW = w * 0.26;
-  // Columna derecha (barcode + desc) — empieza después del QR con un gap mínimo
-  const gapLR = pad * 0.5;
-  const rightX = x + leftW + gapLR;
-  const rightW = w - leftW - gapLR - pad;
+  // Columna izquierda QR = 26% del ancho total
+  const leftW  = w * 0.26;
+  const gapLR  = pad * 0.4;
+  const rightX  = x + leftW + gapLR;
+  const rightW  = w - leftW - gapLR - pad;
 
-  // ── BARCODE ──────────────────────────────────────────────
-  // Alto fijo: 46% del botH — armonioso sin ser dominante
-  // Ancho: todo rightW — estirado para armonía
-  // Y: pequeño margen desde la línea divisora
+  // ── BARCODE — mitad de alto, estirado al ancho ───────────
+  // Antes era 46% del botH, ahora es 23% (mitad)
   const bcMarginTop = botH * 0.05;
-  const bcH = botH * 0.46;
+  const bcH = botH * 0.23;          // ← MITAD de lo anterior
   const bcW = rightW;
   const bcX = rightX;
   const bcY = botY + bcMarginTop;
 
-  // barcodeImg ya es HTMLImageElement precargado — drawImage síncrono
   if (barcodeImg) {
     try { ctx.drawImage(barcodeImg, bcX, bcY, bcW, bcH); } catch(e) {}
   }
 
-  // ── DESCRIPCIÓN ──────────────────────────────────────────
-  // Empieza justo debajo del barcode con pequeño gap
-  // Puede usar 2 líneas sin límite de tamaño de letra (crece hasta llenar el espacio)
-  // No invade el barcode ni el QR porque están por encima
-  const descGap = botH * 0.03;
-  const descY0  = bcY + bcH + descGap;
-  const descH   = botY + botH - descY0 - pad * 0.3;  // hasta el fondo de la etiqueta
+  // ── DESCRIPCIÓN — letra grande, 2 renglones máx, corta ───
+  // El espacio disponible ahora es mucho mayor al reducir barcode
+  // Letra tamaño fijo GRANDE — no se achica aunque sea largo
+  const descGap  = botH * 0.04;
+  const descY0   = bcY + bcH + descGap;
+  const descH    = botY + botH - descY0 - pad * 0.3;
+
+  // Solo 2 renglones, cada uno ocupa la mitad del descH
+  // Letra: llenar el espacio — doble de grande que antes
+  // truncLines corta a descMaxChars por línea, si no cabe se corta visualmente
   const descLines = truncLines(item.description||'', descMaxChars, 2);
-  const widest = descLines.reduce((a,b) => a.length>b.length?a:b, 'x');
-  const descCx = rightX + rightW/2;
-  // Font: crece hasta llenar descH / nLines — sin restricción de tamaño mínimo
-  let dfs = fitFs(ctx, widest, rightW, descH / descLines.length * 0.78, false);
+  const descCx    = rightX + rightW / 2;
+
+  // Tamaño de fuente: cada línea ocupa descH/2 * 0.82 de altura
+  // Esto da letras GRANDES — sin achicarse por el ancho (se corta si no cabe)
+  const lineH = descH / 2;
+  let dfs = lineH * 0.82;
+  // Mínimo garantizado para que sea legible aunque haya 2 líneas muy largas
+  dfs = Math.max(dfs, 8);
+
   ctx.font = `${dfs}px Helvetica,Arial,sans-serif`;
-  const dlh = dfs * 1.28;
+  const dlh = dfs * 1.18;
   const totalDH = descLines.length * dlh;
   let dy = descY0 + (descH - totalDH) / 2 + dfs * 0.75;
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#000';
-  descLines.forEach(l => { ctx.fillText(l, descCx, dy); dy += dlh; });
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#000';
+  descLines.forEach(l => {
+    // Cortar visualmente si la línea es más ancha que rightW
+    ctx.save();
+    ctx.rect(rightX, dy - dfs, rightW, dfs * 1.3);
+    ctx.clip();
+    ctx.fillText(l, descCx, dy);
+    ctx.restore();
+    dy += dlh;
+  });
 
   // ── QR STOCK ─────────────────────────────────────────────
-  // Alineado con bcY (parte superior del barcode)
-  // Tamaño: tan grande como quepa en leftW y en botH desde bcY
-  const qrMaxSz  = Math.min(leftW - pad, botH - bcMarginTop - pad);
-  const qrSz     = qrMaxSz;
-  const qrX      = x + pad * 0.5 + (leftW - pad - qrSz) / 2;
-  const qrY      = bcY;  // alineado con la parte superior del barcode
+  // Alineado con bcY, tan grande como quepa en la columna izquierda
+  // hasta el fondo de botH
+  const qrAvailH = botH - bcMarginTop - pad * 0.5;
+  const qrSz     = Math.min(leftW - pad, qrAvailH);
+  const qrX      = x + (leftW - qrSz) / 2;
+  const qrY      = bcY;   // alineado con la parte superior del barcode
 
   if (stockQrImg) {
     try { ctx.drawImage(stockQrImg, qrX, qrY, qrSz, qrSz); } catch(e) {}
